@@ -17,12 +17,48 @@ import vexiiriscv.prediction.BtbPlugin
 import vexiiriscv.regfile.RegFilePlugin
 import vexiiriscv.soc.TilelinkVexiiRiscvFiber
 
+import scala.collection.mutable.ArrayBuffer
+
+import spinal.lib.bus.amba4.axi.Axi4SpecRenamer
+
+import spinal.lib.misc.plugin.FiberPlugin
 import spinal.lib.misc.AxiLite4Clint
 import spinal.lib.misc.plic.AxiLite4Plic
-import spinal.lib.bus.amba4.axi.Axi4SpecRenamer
 import spinal.lib.bus.amba4.axilite.AxiLite4SpecRenamer
 
-import scala.collection.mutable.ArrayBuffer
+// Create plugin for CLINT and PLIC
+class ClintPlicPlugin extends FiberPlugin {
+  // Define IO signals exposed by the plugin
+  val logic = during build new Area {
+    // Instantiate CLINT and PLIC controllers
+    val clintCtrl = new AxiLite4Clint(1, bufferTime = false)
+    val plicCtrl = new AxiLite4Plic(sourceCount = 31, targetCount = 2)
+
+    // Access AXI-Lite bus interfaces, convert to IO
+    val clint = clintCtrl.io.bus.toIo()
+    val plic = plicCtrl.io.bus.toIo()
+
+    // Define interrupt input bits for PLIC sources
+    val plicInterrupts = in Bits(32 bits)
+    plicInterrupts.setName("plicInterrupts")  // Remove plugin prefix from port name
+    plicCtrl.io.sources := plicInterrupts >> 1
+
+    // Rename AXI ports to use standard AXI signal names
+    AxiLite4SpecRenamer(clint)
+    AxiLite4SpecRenamer(plic)
+
+    // Change prefix of AXI ports
+    clint.setName("clint")
+    plic.setName("plic")
+
+    // Possibly expose interrupt outputs for connection externally
+    // val clintInterrupt = out Bool()
+    // val plicInterrupt = out Bool()
+
+    // clintInterrupt := clintCtrl.io.mtip
+    // plicInterrupt := plicCtrl.io.meip
+  }
+}
 
 // Generates VexiiRiscv verilog using command line arguments
 object VexiiRiscvAxi4LinuxPlicClint extends App {
@@ -51,35 +87,21 @@ object VexiiRiscvAxi4LinuxPlicClint extends App {
   // Set default memory map (Physical Memory Attributes - PMA) if no memory regions are defined 
   if(regions.isEmpty) regions ++= ParamSimple.defaultPma
 
-  // TODO: Add PLIC and CLINT
-  // val clintCtrl = new AxiLite4Clint(1, bufferTime = false)
-  // val plicCtrl = new AxiLite4Plic(
-  //   sourceCount = 31,
-  //   targetCount = 2
-  // )
-  //
-  // val clint = clintCtrl.io.bus.toIo()
-  // val plic = plicCtrl.io.bus.toIo()
-  // val plicInterrupts = in Bits(32 bits)
-  // plicCtrl.io.sources := plicInterrupts >> 1
-  //
-  // AxiLite4SpecRenamer(clint)
-  // AxiLite4SpecRenamer(plic)
-
-
   // Generate CPU's Verilog
   val report = sc.generateVerilog {
     val plugins = param.plugins()
-    // Configure plugins
+    // Add PLIC and CLINT
+    plugins += new ClintPlicPlugin()
+    // Re-configure some plugins
     plugins.foreach{
       case p : EmbeddedRiscvJtag => {
         p.debugCd = ClockDomain.current.copy(reset = Bool().setName("EmbeddedRiscvJtag_logic_debug_reset"))
         p.noTapCd = ClockDomain(Bool().setName("EmbeddedRiscvJtag_logic_jtagInstruction_tck"))
       }
-      //case p : FetchCachelessAxi4Plugin => {
-      //  // Rename AXI4 ports of ibus to standard names
-      //  Axi4SpecRenamer(p.logic.bridge.axi)
-      //}
+      // case p : FetchCachelessAxi4Plugin => {
+      //   // Rename AXI4 ports of ibus to standard names
+      //   Axi4SpecRenamer(p.logic.bridge.axi)
+      // }
       //case p : LsuCachelessAxi4Plugin => {
       //  // Rename AXI4 ports of dbus to standard names
       //  Axi4SpecRenamer(p.logic.axi)
@@ -98,7 +120,9 @@ object VexiiRiscvAxi4LinuxPlicClint extends App {
     // Set memory map
     ParamSimple.setPma(plugins, regions)
     // Generate VexiiRiscv
-    VexiiRiscv(plugins).setDefinitionName("VexiiRiscvAxi4LinuxPlicClint")
+    val cpu = VexiiRiscv(plugins).setDefinitionName("VexiiRiscvAxi4LinuxPlicClint")
+    println(s"Test print : ${cpu}")
+    cpu
   }
 
   analysis.report(report)
