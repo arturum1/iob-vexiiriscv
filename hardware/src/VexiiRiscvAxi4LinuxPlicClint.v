@@ -1,10 +1,10 @@
 // Generator : SpinalHDL dev    git head : b41ad92959289e258483a26f22d0368041dd5667
-// Component : VexiiRiscv
+// Component : VexiiRiscvAxi4LinuxPlicClint
 // Git hash  : bb8d3cb7811ae6e19bba5bef652e2ffe68b1d750
 
 `timescale 1ns/1ps
 
-module VexiiRiscv (
+module VexiiRiscvAxi4LinuxPlicClint (
   input  wire [63:0]   PrivilegedPlugin_logic_rdtime,
   input  wire          PrivilegedPlugin_logic_harts_0_int_m_timer /* verilator public */ ,
   input  wire          PrivilegedPlugin_logic_harts_0_int_m_software /* verilator public */ ,
