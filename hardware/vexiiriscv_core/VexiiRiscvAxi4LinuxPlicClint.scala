@@ -77,7 +77,18 @@ object VexiiRiscvAxi4LinuxPlicClint extends App {
   param.withLinux()
 
   // Set memory regions
-  // TODO:
+  // Set full 32 bit address space as main memory
+  regions.append(
+    new PmaRegionImpl(
+      mapping = SizeMapping(0x00000000L, 0x100000000L), // 4GB = 2^32 bytes
+      isMain = true,
+      isExecutable = true,
+      transfers = M2sTransfers(
+        get = SizeRange.all,
+        putFull = SizeRange.all
+      )
+    )
+  )
 
   // Set default memory map (Physical Memory Attributes - PMA) if no memory regions are defined 
   if(regions.isEmpty) regions ++= ParamSimple.defaultPma
