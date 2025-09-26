@@ -30,7 +30,7 @@ JDK_HOME := $(shell dirname $$(dirname $$(which java)))
 vexiiriscv:
 	#mkdir -p $(VEXII_SUBMODULES_DIR)/VexiiRiscv/src/main/scala/vexiiriscv/platform
 	cp $(VEXII_HARDWARE_DIR)/vexiiriscv_core/VexiiRiscvAxi4LinuxPlicClint.scala $(VEXII_SUBMODULES_DIR)/VexiiRiscv/src/main/scala/vexiiriscv/
-	#cp $(VEXII_HARDWARE_DIR)/vexiiriscv_core/PcPlugin.scala $(VEXII_SUBMODULES_DIR)/VexiiRiscv/src/main/scala/vexiiriscv/fetch/
+	cp $(VEXII_HARDWARE_DIR)/vexiiriscv_core/PcPlugin.scala $(VEXII_SUBMODULES_DIR)/VexiiRiscv/src/main/scala/vexiiriscv/fetch/
 	#cp $(VEXII_HARDWARE_DIR)/vexiiriscv_core/MmuPlugin.scala $(VEXII_SUBMODULES_DIR)/VexiiRiscv/src/main/scala/vexiiriscv/misc/
 	#cp $(VEXII_HARDWARE_DIR)/vexiiriscv_core/LsuPlugin.scala $(VEXII_SUBMODULES_DIR)/VexiiRiscv/src/main/scala/vexiiriscv/lsu/
 	# (Re-)try to apply these patches: https://github.com/SpinalHDL/VexiiRiscv/issues/140#issuecomment-2725576402
@@ -38,8 +38,8 @@ vexiiriscv:
 	# Run sbt to build CPU and copy generated verilog to this repo
 	cd submodules/VexiiRiscv && \
 	sbt -java-home $(JDK_HOME) "runMain vexiiriscv.$(CPU) $(PARAMS)" && \
-	cp $(CPU).v $(VEXIIRISCV_SRC_DIR)/$(CPU).v && \
-	cp $(CPU).v_*.bin $(VEXII_HARDWARE_DIR)/init_mems
+	cp $(CPU).v $(VEXIIRISCV_SRC_DIR)/$(CPU).v
+	#cp $(CPU).v_*.bin $(VEXII_HARDWARE_DIR)/init_mems
 
 vexiiriscv-help:
 	cd submodules/VexiiRiscv && \

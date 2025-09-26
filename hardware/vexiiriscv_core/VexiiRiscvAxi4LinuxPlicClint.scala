@@ -56,7 +56,8 @@ class ClintPlicPlugin extends FiberPlugin {
 // Generates VexiiRiscv verilog using command line arguments
 object VexiiRiscvAxi4LinuxPlicClint extends App {
   val param = new ParamSimple()
-  val sc = SpinalConfig()
+  // Generate with simulation in mind (initialize memories).
+  val sc = SpinalConfig().includeSimulation
   val regions = ArrayBuffer[PmaRegion]()
   val analysis = new AnalysisUtils
   var reportModel = false
