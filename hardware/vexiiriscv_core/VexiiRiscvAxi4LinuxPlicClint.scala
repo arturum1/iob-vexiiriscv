@@ -50,13 +50,6 @@ class ClintPlicPlugin extends FiberPlugin {
     // Change prefix of AXI ports
     clint.setName("clint")
     plic.setName("plic")
-
-    // Possibly expose interrupt outputs for connection externally
-    // val clintInterrupt = out Bool()
-    // val plicInterrupt = out Bool()
-
-    // clintInterrupt := clintCtrl.io.mtip
-    // plicInterrupt := plicCtrl.io.meip
   }
 }
 
@@ -80,6 +73,8 @@ object VexiiRiscvAxi4LinuxPlicClint extends App {
   // Use AXI4 ibus (fetch) and dbus (lsu)
   param.fetchBus = FetchBusEnum.axi4
   param.lsuBus = LsuBusEnum.axi4
+  // Use SU riscv extensions and enable MMU
+  param.withLinux()
 
   // Set memory regions
   // TODO:
@@ -119,9 +114,27 @@ object VexiiRiscvAxi4LinuxPlicClint extends App {
     }
     // Set memory map
     ParamSimple.setPma(plugins, regions)
-    // Generate VexiiRiscv
-    val cpu = VexiiRiscv(plugins).setDefinitionName("VexiiRiscvAxi4LinuxPlicClint")
-    println(s"Test print : ${cpu}")
+    // Elaborate vexiiriscv
+    val cpu = VexiiRiscv(plugins)
+    cpu.setDefinitionName("VexiiRiscvAxi4LinuxPlicClint")
+
+     // cpu.rework {
+     //   //val fetch_plugin = cpu.host[FetchCachelessAxi4Plugin]
+     //   //// For some reason, trying to access bridge causes JVM to get stuck
+     //   //Axi4SpecRenamer(fetch_plugin.logic.bridge.axi)
+
+     //   //val lsu_plugin = cpu.host[LsuCachelessAxi4Plugin]
+     //   //Axi4SpecRenamer(lsu_plugin.logic.axi)
+
+     //   //val priviledged_plugin = cpu.host[PrivilegedPlugin]
+     //   //// Interrupt connections based on NaxRiscvBmbGenerator.scala and CsrPlugin of VexRiscvAxi4LinuxPlicClint.scala 
+     //   //plugin.io.int.machine.external setAsDirectionLess() := cpu.plicCtrl.io.targets(0)       // external interrupts from PLIC
+     //   //plugin.io.int.machine.timer  setAsDirectionLess() := cpu.clintCtrl.io.timerInterrupt(0)  // timer interrupts from CLINT
+     //   //plugin.io.int.machine.software  setAsDirectionLess() := cpu.clintCtrl.io.softwareInterrupt(0) // software interrupts from CLINT
+     //   //if (plugin.p.withSupervisor) plugin.io.int.supervisor.external  setAsDirectionLess() := cpu.plicCtrl.io.targets(1) // supervisor external interrupts from PLIC
+     //   //plugin.io.rdtime  setAsDirectionLess() := cpu.clintCtrl.io.time // time register from CLINT
+     // }
+     // Return cpu to generateVerilog
     cpu
   }
 
