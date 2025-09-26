@@ -93,6 +93,9 @@ object VexiiRiscvAxi4LinuxPlicClint extends App {
   // Set default memory map (Physical Memory Attributes - PMA) if no memory regions are defined 
   if(regions.isEmpty) regions ++= ParamSimple.defaultPma
 
+  // Configure (uncached) IO range
+  // Vexiiriscv does not have cache by default (enable lsu1 to have cache)
+
   // Generate CPU's Verilog
   val report = sc.generateVerilog {
     val plugins = param.plugins()

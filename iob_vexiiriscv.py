@@ -167,154 +167,162 @@ def setup(py_params_dict):
                 "signals": [
                     {"name": "dbus_araddr_ignore_bit", "width": "1"},
                     {"name": "dbus_awaddr_ignore_bit", "width": "1"},
+                    {"name": "unused_rdtime", "width": "64"},
+                    {"name": "unused_harts_0_int_m_timer", "width": "1"},
+                    {"name": "unused_harts_0_int_m_software", "width": "1"},
+                    {"name": "unused_harts_0_int_m_external", "width": "1"},
+                    {"name": "unused_harts_0_int_s_external", "width": "1"},
                 ],
             },
         ],
         "subblocks": [
-            # {
-            #     "core_name": "iob_iob2axil",
-            #     "instance_name": "clint_iob2axil",
-            #     "instance_description": "Convert IOb to AXI lite for CLINT",
-            #     "parameters": {
-            #         "AXIL_ADDR_W": 16,
-            #         "AXIL_DATA_W": "AXI_DATA_W",
-            #     },
-            #     "connect": {
-            #         "iob_s": "clint_cbus_s",
-            #         "axil_m": "clint_cbus_axil",
-            #     },
-            # },
-            # {
-            #     "core_name": "iob_iob2axil",
-            #     "instance_name": "plic_iob2axil",
-            #     "instance_description": "Convert IOb to AXI lite for PLIC",
-            #     "parameters": {
-            #         "AXIL_ADDR_W": 22,
-            #         "AXIL_DATA_W": "AXI_DATA_W",
-            #     },
-            #     "connect": {
-            #         "iob_s": "plic_cbus_s",
-            #         "axil_m": "plic_cbus_axil",
-            #     },
-            # },
+            {
+                "core_name": "iob_iob2axil",
+                "instance_name": "clint_iob2axil",
+                "instance_description": "Convert IOb to AXI lite for CLINT",
+                "parameters": {
+                    "AXIL_ADDR_W": 16,
+                    "AXIL_DATA_W": "AXI_DATA_W",
+                },
+                "connect": {
+                    "iob_s": "clint_cbus_s",
+                    "axil_m": "clint_cbus_axil",
+                },
+            },
+            {
+                "core_name": "iob_iob2axil",
+                "instance_name": "plic_iob2axil",
+                "instance_description": "Convert IOb to AXI lite for PLIC",
+                "parameters": {
+                    "AXIL_ADDR_W": 22,
+                    "AXIL_DATA_W": "AXI_DATA_W",
+                },
+                "connect": {
+                    "iob_s": "plic_cbus_s",
+                    "axil_m": "plic_cbus_axil",
+                },
+            },
         ],
         "snippets": [
             {
                 "verilog_code": """
-   wire [7:0] ibus_axi_arlen_int;
    wire [7:0] dbus_axi_arlen_int;
    wire [7:0] dbus_axi_awlen_int;
 
 
    // Instantiation of VexiiRiscv, Plic, and Clint
    VexiiRiscvAxi4LinuxPlicClint CPU (
+      // CLINT
+      .clint_awvalid(clint_axil_awvalid),
+      .clint_awready(clint_axil_awready),
+      .clint_awaddr(clint_axil_awaddr),
+      .clint_awprot(3'd0),
+      .clint_wvalid(clint_axil_wvalid),
+      .clint_wready(clint_axil_wready),
+      .clint_wdata(clint_axil_wdata),
+      .clint_wstrb(clint_axil_wstrb),
+      .clint_bvalid(clint_axil_bvalid),
+      .clint_bready(clint_axil_bready),
+      .clint_bresp(clint_axil_bresp),
+      .clint_arvalid(clint_axil_arvalid),
+      .clint_arready(clint_axil_arready),
+      .clint_araddr(clint_axil_araddr),
+      .clint_arprot(3'd0),
+      .clint_rvalid(clint_axil_rvalid),
+      .clint_rready(clint_axil_rready),
+      .clint_rdata(clint_axil_rdata),
+      .clint_rresp(clint_axil_rresp),
+      // PLIC
+      .plic_awvalid(plic_axil_awvalid),
+      .plic_awready(plic_axil_awready),
+      .plic_awaddr(plic_axil_awaddr),
+      .plic_awprot(3'd0),
+      .plic_wvalid(plic_axil_wvalid),
+      .plic_wready(plic_axil_wready),
+      .plic_wdata(plic_axil_wdata),
+      .plic_wstrb(plic_axil_wstrb),
+      .plic_bvalid(plic_axil_bvalid),
+      .plic_bready(plic_axil_bready),
+      .plic_bresp(plic_axil_bresp),
+      .plic_arvalid(plic_axil_arvalid),
+      .plic_arready(plic_axil_arready),
+      .plic_araddr(plic_axil_araddr),
+      .plic_arprot(3'd0),
+      .plic_rvalid(plic_axil_rvalid),
+      .plic_rready(plic_axil_rready),
+      .plic_rdata(plic_axil_rdata),
+      .plic_rresp(plic_axil_rresp),
+      .plicInterrupts(plic_interrupts_i),
 """
-                # TODO: Add plic and clint
-                #       // CLINT
-                #       .clint_awvalid(clint_axil_awvalid),
-                #       .clint_awready(clint_axil_awready),
-                #       .clint_awaddr(clint_axil_awaddr),
-                #       .clint_awprot(3'd0),
-                #       .clint_wvalid(clint_axil_wvalid),
-                #       .clint_wready(clint_axil_wready),
-                #       .clint_wdata(clint_axil_wdata),
-                #       .clint_wstrb(clint_axil_wstrb),
-                #       .clint_bvalid(clint_axil_bvalid),
-                #       .clint_bready(clint_axil_bready),
-                #       .clint_bresp(clint_axil_bresp),
-                #       .clint_arvalid(clint_axil_arvalid),
-                #       .clint_arready(clint_axil_arready),
-                #       .clint_araddr(clint_axil_araddr),
-                #       .clint_arprot(3'd0),
-                #       .clint_rvalid(clint_axil_rvalid),
-                #       .clint_rready(clint_axil_rready),
-                #       .clint_rdata(clint_axil_rdata),
-                #       .clint_rresp(clint_axil_rresp),
-                #       // PLIC
-                #       .plic_awvalid(plic_axil_awvalid),
-                #       .plic_awready(plic_axil_awready),
-                #       .plic_awaddr(plic_axil_awaddr),
-                #       .plic_awprot(3'd0),
-                #       .plic_wvalid(plic_axil_wvalid),
-                #       .plic_wready(plic_axil_wready),
-                #       .plic_wdata(plic_axil_wdata),
-                #       .plic_wstrb(plic_axil_wstrb),
-                #       .plic_bvalid(plic_axil_bvalid),
-                #       .plic_bready(plic_axil_bready),
-                #       .plic_bresp(plic_axil_bresp),
-                #       .plic_arvalid(plic_axil_arvalid),
-                #       .plic_arready(plic_axil_arready),
-                #       .plic_araddr(plic_axil_araddr),
-                #       .plic_arprot(3'd0),
-                #       .plic_rvalid(plic_axil_rvalid),
-                #       .plic_rready(plic_axil_rready),
-                #       .plic_rdata(plic_axil_rdata),
-                #       .plic_rresp(plic_axil_rresp),
-                #       .plicInterrupts(plic_interrupts_i),
-                # """
-                #                 + f"""
-                #       // Configuration ports
-                #       .externalResetVector(32'h{params["reset_addr"]:x}),
-                #       .ioStartAddr(32'h{params["uncached_start_addr"]:x}),
-                #       .ioSize(32'h{params["uncached_size"]:x}),
-                # """
+                + f"""
+      // Configuration ports
+      .externalResetVector(32'h{params["reset_addr"]:x}),
+      //.ioStartAddr(32'h{params["uncached_start_addr"]:x}), // Unused if Vexii does not include cache
+      //.ioSize(32'h{params["uncached_size"]:x}), // Unused if Vexii does not include cache
+"""
                 + """
       // Instruction Bus
-      .iBusAxi_arvalid(ibus_axi_arvalid_o),
-      .iBusAxi_arready(ibus_axi_arready_i),
-      .iBusAxi_araddr(ibus_axi_araddr_o),
-      //.iBusAxi_arid(ibus_axi_arid_o), // Not available
-      .iBusAxi_arlen(ibus_axi_arlen_int),
-      .iBusAxi_arsize(ibus_axi_arsize_o),
-      .iBusAxi_arburst(ibus_axi_arburst_o),
-      //.iBusAxi_arlock(ibus_axi_arlock_o), // Not available
-      //.iBusAxi_arcache(ibus_axi_arcache_o), // Not available
-      //.iBusAxi_arqos(ibus_axi_arqos_o), // Not available
-      .iBusAxi_arprot(),
-      .iBusAxi_rvalid(ibus_axi_rvalid_i),
-      .iBusAxi_rready(ibus_axi_rready_o),
-      .iBusAxi_rdata(ibus_axi_rdata_i),
-      //.iBusAxi_rid(ibus_axi_rid_i), // Not available
-      .iBusAxi_rresp(ibus_axi_rresp_i),
-      .iBusAxi_rlast(ibus_axi_rlast_i),
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_ar_valid(ibus_axi_arvalid_o),
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_ar_ready(ibus_axi_arready_i),
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_ar_payload_addr(ibus_axi_araddr_o),
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_ar_payload_id(ibus_axi_arid_o),
+      //.FetchCachelessAxi4Plugin_logic_bridge_axi_ar_payload_len(ibus_axi_arlen_o), // Not available
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_ar_payload_size(ibus_axi_arsize_o),
+      //.FetchCachelessAxi4Plugin_logic_bridge_axi_ar_burst(ibus_axi_arburst_o), // Not available
+      //.FetchCachelessAxi4Plugin_logic_bridge_axi_ar_lock(ibus_axi_arlock_o), // Not available
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_ar_payload_cache(ibus_axi_arcache_o),
+      //.FetchCachelessAxi4Plugin_logic_bridge_axi_ar_payload_qos(ibus_axi_arqos_o), // Not available
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_ar_payload_prot(),
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_r_valid(ibus_axi_rvalid_i),
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_r_ready(ibus_axi_rready_o),
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_r_payload_data(ibus_axi_rdata_i),
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_r_payload_id(ibus_axi_rid_i),
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_r_payload_resp(ibus_axi_rresp_i),
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_r_payload_last(ibus_axi_rlast_i),
       // Data Bus
-      .dBusAxi_awvalid(dbus_axi_awvalid),
-      .dBusAxi_awready(dbus_axi_awready),
-      .dBusAxi_awaddr(dbus_axi_awaddr),
-      .dBusAxi_awid(dbus_axi_awid),
-      .dBusAxi_awlen(dbus_axi_awlen_int),
-      .dBusAxi_awsize(dbus_axi_awsize),
-      .dBusAxi_awburst(dbus_axi_awburst),
-      //.dBusAxi_awlock(dbus_axi_awlock), // Not available
-      //.dBusAxi_awcache(dbus_axi_awcache), // Not available
-      //.dBusAxi_awqos(dbus_axi_awqos), // Not available
-      .dBusAxi_awprot(),
-      .dBusAxi_wvalid(dbus_axi_wvalid),
-      .dBusAxi_wready(dbus_axi_wready),
-      .dBusAxi_wdata(dbus_axi_wdata),
-      .dBusAxi_wstrb(dbus_axi_wstrb),
-      .dBusAxi_wlast(dbus_axi_wlast),
-      .dBusAxi_bvalid(dbus_axi_bvalid),
-      .dBusAxi_bready(dbus_axi_bready),
-      .dBusAxi_bid(dbus_axi_bid),
-      .dBusAxi_bresp(dbus_axi_bresp),
-      .dBusAxi_arvalid(dbus_axi_arvalid),
-      .dBusAxi_arready(dbus_axi_arready),
-      .dBusAxi_araddr(dbus_axi_araddr),
-      .dBusAxi_arid(dbus_axi_arid),
-      .dBusAxi_arlen(dbus_axi_arlen_int),
-      .dBusAxi_arsize(dbus_axi_arsize),
-      .dBusAxi_arburst(dbus_axi_arburst),
-      //.dBusAxi_arlock(dbus_axi_arlock), // Not available
-      //.dBusAxi_arcache(dbus_axi_arcache), // Not available
-      //.dBusAxi_arqos(dbus_axi_arqos), // Not available
-      .dBusAxi_arprot(),
-      .dBusAxi_rvalid(dbus_axi_rvalid),
-      .dBusAxi_rready(dbus_axi_rready),
-      .dBusAxi_rdata(dbus_axi_rdata),
-      .dBusAxi_rid(dbus_axi_rid),
-      .dBusAxi_rresp(dbus_axi_rresp),
-      .dBusAxi_rlast(dbus_axi_rlast),
+      .LsuCachelessAxi4Plugin_logic_axi_aw_valid(dbus_axi_awvalid_o),
+      .LsuCachelessAxi4Plugin_logic_axi_aw_ready(dbus_axi_awready_i),
+      .LsuCachelessAxi4Plugin_logic_axi_aw_payload_addr(dbus_axi_awaddr_o),
+      .LsuCachelessAxi4Plugin_logic_axi_aw_payload_id(dbus_axi_awid_o),
+      //.LsuCachelessAxi4Plugin_logic_axi_aw_payload_len(dbus_axi_awlen_o), // Not available
+      .LsuCachelessAxi4Plugin_logic_axi_aw_payload_size(dbus_axi_awsize_o),
+      //.LsuCachelessAxi4Plugin_logic_axi_aw_payload_burst(dbus_axi_awburst_o), // Not available
+      //.LsuCachelessAxi4Plugin_logic_axi_aw_payload_lock(dbus_axi_awlock_o), // Not available
+      .LsuCachelessAxi4Plugin_logic_axi_aw_payload_cache(dbus_axi_awcache_o),
+      //.LsuCachelessAxi4Plugin_logic_axi_aw_payload_qos(dbus_axi_awqos_o), // Not available
+      .LsuCachelessAxi4Plugin_logic_axi_aw_payload_prot(),
+      .LsuCachelessAxi4Plugin_logic_axi_w_valid(dbus_axi_wvalid_o),
+      .LsuCachelessAxi4Plugin_logic_axi_w_ready(dbus_axi_wready_i),
+      .LsuCachelessAxi4Plugin_logic_axi_w_payload_data(dbus_axi_wdata_o),
+      .LsuCachelessAxi4Plugin_logic_axi_w_payload_strb(dbus_axi_wstrb_o),
+      .LsuCachelessAxi4Plugin_logic_axi_w_payload_last(dbus_axi_wlast_o),
+      .LsuCachelessAxi4Plugin_logic_axi_b_valid(dbus_axi_bvalid_i),
+      .LsuCachelessAxi4Plugin_logic_axi_b_ready(dbus_axi_bready_o),
+      .LsuCachelessAxi4Plugin_logic_axi_b_payload_id(dbus_axi_bid_i),
+      .LsuCachelessAxi4Plugin_logic_axi_b_payload_resp(dbus_axi_bresp_i),
+      .LsuCachelessAxi4Plugin_logic_axi_ar_valid(dbus_axi_arvalid_o),
+      .LsuCachelessAxi4Plugin_logic_axi_ar_ready(dbus_axi_arready_i),
+      .LsuCachelessAxi4Plugin_logic_axi_ar_payload_addr(dbus_axi_araddr_o),
+      .LsuCachelessAxi4Plugin_logic_axi_ar_payload_id(dbus_axi_arid_o),
+      //.LsuCachelessAxi4Plugin_logic_axi_ar_payload_len(dbus_axi_arlen_o), // Not available
+      .LsuCachelessAxi4Plugin_logic_axi_ar_payload_size(dbus_axi_arsize_o),
+      //.LsuCachelessAxi4Plugin_logic_axi_ar_payload_burst(dbus_axi_arburst_o), // Not available
+      //.LsuCachelessAxi4Plugin_logic_axi_ar_payload_lock(dbus_axi_arlock_o), // Not available
+      .LsuCachelessAxi4Plugin_logic_axi_ar_payload_cache(dbus_axi_arcache_o),
+      //.LsuCachelessAxi4Plugin_logic_axi_ar_payload_qos(dbus_axi_arqos_o), // Not available
+      .LsuCachelessAxi4Plugin_logic_axi_ar_payload_prot(),
+      .LsuCachelessAxi4Plugin_logic_axi_r_valid(dbus_axi_rvalid_i),
+      .LsuCachelessAxi4Plugin_logic_axi_r_ready(dbus_axi_rready_o),
+      .LsuCachelessAxi4Plugin_logic_axi_r_payload_data(dbus_axi_rdata_i),
+      .LsuCachelessAxi4Plugin_logic_axi_r_payload_id(dbus_axi_rid_i),
+      .LsuCachelessAxi4Plugin_logic_axi_r_payload_resp(dbus_axi_rresp_i),
+      .LsuCachelessAxi4Plugin_logic_axi_r_payload_last(dbus_axi_rlast_i),
+      // Interrupts (TODO: connect them in SpinalHDL to internal plic and clint units)
+      .PrivilegedPlugin_logic_rdtime(unused_rdtime),
+      .PrivilegedPlugin_logic_harts_0_int_m_timer(unused_harts_0_int_m_timer),
+      .PrivilegedPlugin_logic_harts_0_int_m_software(unused_harts_0_int_m_software),
+      .PrivilegedPlugin_logic_harts_0_int_m_external(unused_harts_0_int_m_external),
+      .PrivilegedPlugin_logic_harts_0_int_s_external(unused_harts_0_int_s_external),
       // Clock and Reset
       .clk(clk_i),
       .reset(cpu_reset)
@@ -341,29 +349,27 @@ def setup(py_params_dict):
    assign ibus_axi_bready_o = 1'b0;
 
    // Unused AXI signals
-   assign ibus_axi_arid_o = {AXI_ID_W{1'b0}};
+   assign ibus_axi_arlen_o = 1'b0;
+   assign ibus_axi_arburst_o = 1'b0;
    assign ibus_axi_arlock_o = 1'b0;
-   assign ibus_axi_arcache_o = 4'b0;
    assign ibus_axi_arqos_o = 4'b0;
-   // ibus_axi_rid_i // Unused input
-   assign dbus_axi_awlock = 1'b0;
-   assign dbus_axi_awcache = 4'b0;
-   assign dbus_axi_awqos = 4'b0;
-   assign dbus_axi_arlock = 1'b0;
-   assign dbus_axi_arcache = 4'b0;
-   assign dbus_axi_arqos = 4'b0;
 
-   generate
-      if (AXI_LEN_W < 8) begin : gen_if_less_than_8
-         assign ibus_axi_arlen_o = ibus_axi_arlen_int[AXI_LEN_W-1:0];
-         assign dbus_axi_arlen = dbus_axi_arlen_int[AXI_LEN_W-1:0];
-         assign dbus_axi_awlen = dbus_axi_awlen_int[AXI_LEN_W-1:0];
-      end else begin : gen_if_equal_8
-         assign ibus_axi_arlen_o = ibus_axi_arlen_int;
-         assign dbus_axi_arlen = dbus_axi_arlen_int;
-         assign dbus_axi_awlen = dbus_axi_awlen_int;
-      end
-   endgenerate
+   assign dbus_axi_awlen_o = 1'b0;
+   assign dbus_axi_awburst_o = 1'b0;
+   assign dbus_axi_awlock_o = 1'b0;
+   assign dbus_axi_awqos_o = 4'b0;
+   assign dbus_axi_arlen_o = 1'b0;
+   assign dbus_axi_arburst_o = 1'b0;
+   assign dbus_axi_arlock_o = 1'b0;
+   assign dbus_axi_arqos_o = 4'b0;
+
+   // Temporary unused interrupt signals
+   assign unused_rdtime = 64'b0;
+   assign unused_harts_0_int_m_timer = 1'b0;
+   assign unused_harts_0_int_m_software = 1'b0;
+   assign unused_harts_0_int_m_external = 1'b0;
+   assign unused_harts_0_int_s_external = 1'b0;
+
 """
             }
         ],
@@ -371,9 +377,6 @@ def setup(py_params_dict):
 
     return attributes_dict
 
-
-# TODO:
-'''
     if py_params_dict.get("py2hwsw_target", "") == "setup":
         build_dir = py_params_dict.get("build_dir")
         # Disable linter for `VexiiRiscvAxi4LinuxPlicClint.v` source.
@@ -385,6 +388,10 @@ def setup(py_params_dict):
 lint_off -file "**/VexiiRiscvAxi4LinuxPlicClint.v"
 """
             )
+
+
+# TODO:
+"""
         # Copy CPU memory initialization binaries to build directory
         os.makedirs(f"{build_dir}/hardware/simulation", exist_ok=True)
         os.makedirs(f"{build_dir}/hardware/fpga", exist_ok=True)
@@ -400,4 +407,4 @@ lint_off -file "**/VexiiRiscvAxi4LinuxPlicClint.v"
                 f"../simulation/{file}",
                 f"{build_dir}/hardware/fpga/{file}",
             )
-'''
+"""
