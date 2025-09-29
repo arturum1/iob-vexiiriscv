@@ -71,17 +71,20 @@ object VexiiRiscvAxi4LinuxPlicClint extends App {
     ParamSimple.addOptionRegion(this, regions)
   }.parse(args, ()).nonEmpty)
 
+  // Enable L1 caches on ibus and dbus
+  param.withCaches()
   // Use AXI4 ibus (fetch) and dbus (lsu)
   param.fetchBus = FetchBusEnum.axi4
   param.lsuBus = LsuBusEnum.axi4
+  param.lsuL1Bus = LsuL1BusEnum.axi4
   // Use SU riscv extensions and enable MMU
   param.withLinux()
 
   // Set memory regions
-  // Set full 32 bit address space as main memory
+  // Divide memory in half. First half is cached main memory, second half is uncached io memory
   regions.append(
     new PmaRegionImpl(
-      mapping = SizeMapping(0x00000000L, 0x100000000L), // 4GB = 2^32 bytes
+      mapping = SizeMapping(0x00000000L, 0x80000000L), // 2GB = 2^31 bytes
       isMain = true,
       isExecutable = true,
       transfers = M2sTransfers(
@@ -90,6 +93,19 @@ object VexiiRiscvAxi4LinuxPlicClint extends App {
       )
     )
   )
+  regions.append(
+    new PmaRegionImpl(
+      mapping = SizeMapping(0x80000000L, 0x80000000L), // 2GB = 2^31 bytes
+      isMain = false,
+      isExecutable = true,
+      transfers = M2sTransfers(
+        get = SizeRange.all,
+        putFull = SizeRange.all
+      )
+    )
+  )
+
+  // TODO: Add ports for configuration of uncached IO range
 
   // Set default memory map (Physical Memory Attributes - PMA) if no memory regions are defined 
   if(regions.isEmpty) regions ++= ParamSimple.defaultPma
