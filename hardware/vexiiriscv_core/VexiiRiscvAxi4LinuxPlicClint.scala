@@ -79,6 +79,8 @@ object VexiiRiscvAxi4LinuxPlicClint extends App {
   param.lsuL1Bus = LsuL1BusEnum.axi4
   // Use SU riscv extensions and enable MMU
   param.withLinux()
+  // Enable branch prediction
+  param.withBranchPredicton()
 
   // Set memory regions
   // Divide memory in half. First half is cached main memory, second half is uncached io memory
