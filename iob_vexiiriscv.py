@@ -486,8 +486,6 @@ def setup(py_params_dict):
         ],
     }
 
-    return attributes_dict
-
     if py_params_dict.get("py2hwsw_target", "") == "setup":
         build_dir = py_params_dict.get("build_dir")
         # Disable linter for `VexiiRiscvAxi4LinuxPlicClint.v` source.
@@ -500,9 +498,6 @@ lint_off -file "**/VexiiRiscvAxi4LinuxPlicClint.v"
 """
             )
 
-
-# TODO:
-"""
         # Copy CPU memory initialization binaries to build directory
         os.makedirs(f"{build_dir}/hardware/simulation", exist_ok=True)
         os.makedirs(f"{build_dir}/hardware/fpga", exist_ok=True)
@@ -518,4 +513,5 @@ lint_off -file "**/VexiiRiscvAxi4LinuxPlicClint.v"
                 f"../simulation/{file}",
                 f"{build_dir}/hardware/fpga/{file}",
             )
-"""
+
+    return attributes_dict

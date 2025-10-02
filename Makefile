@@ -38,8 +38,8 @@ vexiiriscv:
 	# Run sbt to build CPU and copy generated verilog to this repo
 	cd submodules/VexiiRiscv && \
 	sbt -java-home $(JDK_HOME) "runMain vexiiriscv.$(CPU) $(PARAMS)" && \
-	cp $(CPU).v $(VEXIIRISCV_SRC_DIR)/$(CPU).v
-	#cp $(CPU).v_*.bin $(VEXII_HARDWARE_DIR)/init_mems
+	cp $(CPU).v $(VEXIIRISCV_SRC_DIR)/$(CPU).v && \
+	cp $(CPU).v_*.bin $(VEXII_HARDWARE_DIR)/init_mems
 
 vexiiriscv-help:
 	cd submodules/VexiiRiscv && \
