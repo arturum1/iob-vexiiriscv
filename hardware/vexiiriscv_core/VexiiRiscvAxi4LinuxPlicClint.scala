@@ -71,8 +71,12 @@ object VexiiRiscvAxi4LinuxPlicClint extends App {
     ParamSimple.addOptionRegion(this, regions)
   }.parse(args, ()).nonEmpty)
 
-  // Enable L1 caches on ibus and dbus
-  param.withCaches()
+  // Enable L1 cache on dbus
+  param.lsuL1Enable = true
+  param.lsuL1Sets = 64
+  param.lsuL1Ways = 2
+  param.withLsuBypass = true
+
   // Use AXI4 ibus (fetch) and dbus (lsu)
   param.fetchBus = FetchBusEnum.axi4
   param.lsuBus = LsuBusEnum.axi4

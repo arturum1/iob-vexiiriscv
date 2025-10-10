@@ -318,23 +318,23 @@ def setup(py_params_dict):
                 + """
 
       // Instruction Bus
-      .FetchL1Axi4Plugin_logic_axi_ar_valid(ibus_axi_arvalid_o),
-      .FetchL1Axi4Plugin_logic_axi_ar_ready(ibus_axi_arready_i),
-      .FetchL1Axi4Plugin_logic_axi_ar_payload_addr(ibus_axi_araddr_o),
-      //.FetchL1Axi4Plugin_logic_axi_ar_payload_id(ibus_axi_arid_o), // Not available
-      .FetchL1Axi4Plugin_logic_axi_ar_payload_len(ibus_axi_arlen_o),
-      .FetchL1Axi4Plugin_logic_axi_ar_payload_size(ibus_axi_arsize_o),
-      .FetchL1Axi4Plugin_logic_axi_ar_payload_burst(ibus_axi_arburst_o),
-      //.FetchL1Axi4Plugin_logic_axi_ar_payload_lock(ibus_axi_arlock_o), // Not available
-      .FetchL1Axi4Plugin_logic_axi_ar_payload_cache(ibus_axi_arcache_o),
-      //.FetchL1Axi4Plugin_logic_axi_ar_payload_qos(ibus_axi_arqos_o), // Not available
-      .FetchL1Axi4Plugin_logic_axi_ar_payload_prot(),
-      .FetchL1Axi4Plugin_logic_axi_r_valid(ibus_axi_rvalid_i),
-      .FetchL1Axi4Plugin_logic_axi_r_ready(ibus_axi_rready_o),
-      .FetchL1Axi4Plugin_logic_axi_r_payload_data(ibus_axi_rdata_i),
-      //.FetchL1Axi4Plugin_logic_axi_r_payload_id(ibus_axi_rid_i), // Not available
-      .FetchL1Axi4Plugin_logic_axi_r_payload_resp(ibus_axi_rresp_i),
-      .FetchL1Axi4Plugin_logic_axi_r_payload_last(ibus_axi_rlast_i),
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_ar_valid(ibus_axi_arvalid_o),
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_ar_ready(ibus_axi_arready_i),
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_ar_payload_addr(ibus_axi_araddr_o),
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_ar_payload_id(ibus_axi_arid_o),
+      //.FetchCachelessAxi4Plugin_logic_bridge_axi_ar_payload_len(ibus_axi_arlen_o), // Not available
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_ar_payload_size(ibus_axi_arsize_o),
+      //.FetchCachelessAxi4Plugin_logic_bridge_axi_ar_burst(ibus_axi_arburst_o), // Not available
+      //.FetchCachelessAxi4Plugin_logic_bridge_axi_ar_lock(ibus_axi_arlock_o), // Not available
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_ar_payload_cache(ibus_axi_arcache_o),
+      //.FetchCachelessAxi4Plugin_logic_bridge_axi_ar_payload_qos(ibus_axi_arqos_o), // Not available
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_ar_payload_prot(),
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_r_valid(ibus_axi_rvalid_i),
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_r_ready(ibus_axi_rready_o),
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_r_payload_data(ibus_axi_rdata_i),
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_r_payload_id(ibus_axi_rid_i),
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_r_payload_resp(ibus_axi_rresp_i),
+      .FetchCachelessAxi4Plugin_logic_bridge_axi_r_payload_last(ibus_axi_rlast_i),
 
       // (cached) Data Bus
       .LsuL1Axi4Plugin_logic_axi_aw_valid(cached_dbus_axi_awvalid),
@@ -447,10 +447,10 @@ def setup(py_params_dict):
    assign ibus_axi_bready_o = 1'b0;
 
    // Unused AXI signals
-   assign ibus_axi_arid_o = 1'b0;
+   assign ibus_axi_arlen_o = 1'b0;
+   assign ibus_axi_arburst_o = 1'b0;
    assign ibus_axi_arlock_o = 1'b0;
    assign ibus_axi_arqos_o = 4'b0;
-   // ibus_axi_rid_i
 
    assign cached_dbus_axi_awid = 1'b0;
    assign cached_dbus_axi_awlock = 1'b0;
