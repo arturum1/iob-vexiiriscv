@@ -175,6 +175,32 @@ def setup(py_params_dict):
                     {"name": "unused_harts_0_int_s_external", "width": "1"},
                 ],
             },
+            {
+                "name": "cached_d_bus",
+                "descr": "CPU data bus",
+                "signals": {
+                    "type": "axi",
+                    "prefix": "cached_dbus_",
+                    "ID_W": "AXI_ID_W",
+                    "ADDR_W": "AXI_ADDR_W",
+                    "DATA_W": "AXI_DATA_W",
+                    "LEN_W": "AXI_LEN_W",
+                    "LOCK_W": 1,
+                },
+            },
+            {
+                "name": "uncached_d_bus",
+                "descr": "CPU data bus",
+                "signals": {
+                    "type": "axi",
+                    "prefix": "uncached_dbus_",
+                    "ID_W": "AXI_ID_W",
+                    "ADDR_W": "AXI_ADDR_W",
+                    "DATA_W": "AXI_DATA_W",
+                    "LEN_W": "AXI_LEN_W",
+                    "LOCK_W": 1,
+                },
+            },
         ],
         "subblocks": [
             {
@@ -382,6 +408,12 @@ def setup(py_params_dict):
     # Include iob_cache
     #
 
+    # CPU dbus -> axi2iob -> iob_split --> iob_cache --> axi_merge -> memory
+    #                                   |             |
+    #                                   |-> iob2axi  -|
+    #
+    # The iob_split will split requests based on if the request address being included in the io region.
+
     if params["include_cache"]:
         attributes_dict["wires"] += [
             {
@@ -404,11 +436,11 @@ def setup(py_params_dict):
                 },
             },
             {
-                "name": "d_bus_uncached",
+                "name": "cpu_d_bus_uncached",
                 "descr": "Uncached CPU data bus",
                 "signals": {
                     "type": "axi",
-                    "prefix": "dbus_uncached_",
+                    "prefix": "cpu_dbus_uncached_",
                     "ID_W": "AXI_ID_W",
                     "ADDR_W": "AXI_ADDR_W",
                     "DATA_W": "AXI_DATA_W",
@@ -430,9 +462,27 @@ def setup(py_params_dict):
                 },
                 "connect": {
                     "clk_en_rst_s": "clk_en_rst_s",
-                    "axi_s": "d_bus_uncached",
+                    "axi_s": "cpu_d_bus_uncached",
                     "iob_m": "iob_d_bus_uncached",
                 },
+            },
+            {
+                "core_name": "iob_split",
+                "name": "iob_vexiiriscv_dbus_iob_split",
+                "instance_name": "dbus_iob_split",
+                "instance_description": "Split between cache and bypass",
+                "connect": {
+                    "clk_en_rst_s": "clk_en_rst_s",
+                    "reset_i": "rst_i",
+                    "input_s": (
+                        "iob_d_bus_uncached",
+                        ["{inside_io_region, dbus_uncached_iob_addr}"],
+                    ),
+                    "output_0_m": "iob_d_bus_cache",
+                    "output_1_m": "iob_d_bus_bypass",
+                },
+                "num_outputs": 2,
+                "addr_w": 33,  # Each manager has -1 address bit (32 bits each). Subordinate has 33 bits (32 address + 1 selector)
             },
             {
                 "core_name": "iob_cache",
@@ -453,68 +503,113 @@ def setup(py_params_dict):
                 },
                 "connect": {
                     "clk_en_rst_s": "clk_en_rst_s",
-                    "iob_s": "iob_d_bus_uncached",
-                    "axi_m": "d_bus_m",  # TODO: Bypass cache for uncached io regions
+                    "iob_s": "iob_d_bus_cache",
+                    "axi_m": "cached_d_bus",
                     "ie_io": "cache_ie",
                 },
             },
+            {
+                "core_name": "iob_iob2axi",
+                "instance_name": "iob_iob2axi_coverter",
+                "instance_description": "Convert IOb from internal wire into AXI interface for manager port",
+                "parameters": {
+                    "AXI_ADDR_W": "AXI_ADDR_W",
+                    "AXI_DATA_W": "AXI_DATA_W",
+                    "AXI_ID_W": "AXI_ID_W",
+                    "AXI_LEN_W": "AXI_LEN_W",
+                    "AXI_LOCK_W": 1,
+                },
+                "connect": {
+                    "clk_en_rst_s": "clk_en_rst_s",
+                    "iob_s": "iob_d_bus_bypass",
+                    "axi_m": "uncached_d_bus",
+                },
+            },
+            {
+                "core_name": "iob_axi_merge",
+                "name": "iob_vexiiriscv_dbus_axi_merge",
+                "instance_name": "dbus_axi_merge",
+                "instance_description": "Merge internal data and peripheral buses into a single data bus",
+                "addr_w": 33,  # Each subordinate has -1 address bit (32 bits each). Manager has 33 bits (1 ignored).
+                "lock_w": 1,
+                "parameters": {
+                    "ID_W": "AXI_ID_W",
+                    "LEN_W": "AXI_LEN_W",
+                },
+                "num_subordinates": 2,
+                "connect": {
+                    "clk_en_rst_s": "clk_en_rst_s",
+                    "reset_i": "rst_i",
+                    "s_0_s": "cached_d_bus",
+                    "s_1_s": "uncached_d_bus",
+                    "m_m": (
+                        "d_bus_m",
+                        [
+                            # Ignore most significant address bit (we only use 32 bits)
+                            "{dbus_araddr_ignore_bit, dbus_axi_araddr_o}",
+                            "{dbus_awaddr_ignore_bit, dbus_axi_awaddr_o}",
+                        ],
+                    ),
+                },
+            },
         ]
-        assigns_snippet += """
+        assigns_snippet += f"""
    assign cache_invalidate_i = 1'b0;
    assign cache_wtb_empty_i = 1'b1;
+
+   wire inside_io_region = dbus_uncached_iob_addr >= 32'h{params["uncached_start_addr"]:x} && dbus_uncached_iob_addr <= 32'h{(params["uncached_start_addr"]+params["uncached_size"]-1):x};
 """
         # Replace connection in dbus port
         cpu_dbus_port_snippet = """
       // Data Bus
-      .LsuCachelessAxi4Plugin_logic_axi_aw_valid(dbus_uncached_axi_awvalid),
-      .LsuCachelessAxi4Plugin_logic_axi_aw_ready(dbus_uncached_axi_awready),
-      .LsuCachelessAxi4Plugin_logic_axi_aw_payload_addr(dbus_uncached_axi_awaddr),
-      .LsuCachelessAxi4Plugin_logic_axi_aw_payload_id(dbus_uncached_axi_awid),
-      //.LsuCachelessAxi4Plugin_logic_axi_aw_payload_len(dbus_uncached_axi_awlen), // Not available
-      .LsuCachelessAxi4Plugin_logic_axi_aw_payload_size(dbus_uncached_axi_awsize),
-      //.LsuCachelessAxi4Plugin_logic_axi_aw_payload_burst(dbus_uncached_axi_awburst), // Not available
-      //.LsuCachelessAxi4Plugin_logic_axi_aw_payload_lock(dbus_uncached_axi_awlock), // Not available
-      .LsuCachelessAxi4Plugin_logic_axi_aw_payload_cache(dbus_uncached_axi_awcache),
-      //.LsuCachelessAxi4Plugin_logic_axi_aw_payload_qos(dbus_uncached_axi_awqos), // Not available
+      .LsuCachelessAxi4Plugin_logic_axi_aw_valid(cpu_dbus_uncached_axi_awvalid),
+      .LsuCachelessAxi4Plugin_logic_axi_aw_ready(cpu_dbus_uncached_axi_awready),
+      .LsuCachelessAxi4Plugin_logic_axi_aw_payload_addr(cpu_dbus_uncached_axi_awaddr),
+      .LsuCachelessAxi4Plugin_logic_axi_aw_payload_id(cpu_dbus_uncached_axi_awid),
+      //.LsuCachelessAxi4Plugin_logic_axi_aw_payload_len(cpu_dbus_uncached_axi_awlen), // Not available
+      .LsuCachelessAxi4Plugin_logic_axi_aw_payload_size(cpu_dbus_uncached_axi_awsize),
+      //.LsuCachelessAxi4Plugin_logic_axi_aw_payload_burst(cpu_dbus_uncached_axi_awburst), // Not available
+      //.LsuCachelessAxi4Plugin_logic_axi_aw_payload_lock(cpu_dbus_uncached_axi_awlock), // Not available
+      .LsuCachelessAxi4Plugin_logic_axi_aw_payload_cache(cpu_dbus_uncached_axi_awcache),
+      //.LsuCachelessAxi4Plugin_logic_axi_aw_payload_qos(cpu_dbus_uncached_axi_awqos), // Not available
       .LsuCachelessAxi4Plugin_logic_axi_aw_payload_prot(),
-      .LsuCachelessAxi4Plugin_logic_axi_w_valid(dbus_uncached_axi_wvalid),
-      .LsuCachelessAxi4Plugin_logic_axi_w_ready(dbus_uncached_axi_wready),
-      .LsuCachelessAxi4Plugin_logic_axi_w_payload_data(dbus_uncached_axi_wdata),
-      .LsuCachelessAxi4Plugin_logic_axi_w_payload_strb(dbus_uncached_axi_wstrb),
-      .LsuCachelessAxi4Plugin_logic_axi_w_payload_last(dbus_uncached_axi_wlast),
-      .LsuCachelessAxi4Plugin_logic_axi_b_valid(dbus_uncached_axi_bvalid),
-      .LsuCachelessAxi4Plugin_logic_axi_b_ready(dbus_uncached_axi_bready),
-      .LsuCachelessAxi4Plugin_logic_axi_b_payload_id(dbus_uncached_axi_bid),
-      .LsuCachelessAxi4Plugin_logic_axi_b_payload_resp(dbus_uncached_axi_bresp),
-      .LsuCachelessAxi4Plugin_logic_axi_ar_valid(dbus_uncached_axi_arvalid),
-      .LsuCachelessAxi4Plugin_logic_axi_ar_ready(dbus_uncached_axi_arready),
-      .LsuCachelessAxi4Plugin_logic_axi_ar_payload_addr(dbus_uncached_axi_araddr),
-      .LsuCachelessAxi4Plugin_logic_axi_ar_payload_id(dbus_uncached_axi_arid),
-      //.LsuCachelessAxi4Plugin_logic_axi_ar_payload_len(dbus_uncached_axi_arlen), // Not available
-      .LsuCachelessAxi4Plugin_logic_axi_ar_payload_size(dbus_uncached_axi_arsize),
-      //.LsuCachelessAxi4Plugin_logic_axi_ar_payload_burst(dbus_uncached_axi_arburst), // Not available
-      //.LsuCachelessAxi4Plugin_logic_axi_ar_payload_lock(dbus_uncached_axi_arlock), // Not available
-      .LsuCachelessAxi4Plugin_logic_axi_ar_payload_cache(dbus_uncached_axi_arcache),
-      //.LsuCachelessAxi4Plugin_logic_axi_ar_payload_qos(dbus_uncached_axi_arqos), // Not available
+      .LsuCachelessAxi4Plugin_logic_axi_w_valid(cpu_dbus_uncached_axi_wvalid),
+      .LsuCachelessAxi4Plugin_logic_axi_w_ready(cpu_dbus_uncached_axi_wready),
+      .LsuCachelessAxi4Plugin_logic_axi_w_payload_data(cpu_dbus_uncached_axi_wdata),
+      .LsuCachelessAxi4Plugin_logic_axi_w_payload_strb(cpu_dbus_uncached_axi_wstrb),
+      .LsuCachelessAxi4Plugin_logic_axi_w_payload_last(cpu_dbus_uncached_axi_wlast),
+      .LsuCachelessAxi4Plugin_logic_axi_b_valid(cpu_dbus_uncached_axi_bvalid),
+      .LsuCachelessAxi4Plugin_logic_axi_b_ready(cpu_dbus_uncached_axi_bready),
+      .LsuCachelessAxi4Plugin_logic_axi_b_payload_id(cpu_dbus_uncached_axi_bid),
+      .LsuCachelessAxi4Plugin_logic_axi_b_payload_resp(cpu_dbus_uncached_axi_bresp),
+      .LsuCachelessAxi4Plugin_logic_axi_ar_valid(cpu_dbus_uncached_axi_arvalid),
+      .LsuCachelessAxi4Plugin_logic_axi_ar_ready(cpu_dbus_uncached_axi_arready),
+      .LsuCachelessAxi4Plugin_logic_axi_ar_payload_addr(cpu_dbus_uncached_axi_araddr),
+      .LsuCachelessAxi4Plugin_logic_axi_ar_payload_id(cpu_dbus_uncached_axi_arid),
+      //.LsuCachelessAxi4Plugin_logic_axi_ar_payload_len(cpu_dbus_uncached_axi_arlen), // Not available
+      .LsuCachelessAxi4Plugin_logic_axi_ar_payload_size(cpu_dbus_uncached_axi_arsize),
+      //.LsuCachelessAxi4Plugin_logic_axi_ar_payload_burst(cpu_dbus_uncached_axi_arburst), // Not available
+      //.LsuCachelessAxi4Plugin_logic_axi_ar_payload_lock(cpu_dbus_uncached_axi_arlock), // Not available
+      .LsuCachelessAxi4Plugin_logic_axi_ar_payload_cache(cpu_dbus_uncached_axi_arcache),
+      //.LsuCachelessAxi4Plugin_logic_axi_ar_payload_qos(cpu_dbus_uncached_axi_arqos), // Not available
       .LsuCachelessAxi4Plugin_logic_axi_ar_payload_prot(),
-      .LsuCachelessAxi4Plugin_logic_axi_r_valid(dbus_uncached_axi_rvalid),
-      .LsuCachelessAxi4Plugin_logic_axi_r_ready(dbus_uncached_axi_rready),
-      .LsuCachelessAxi4Plugin_logic_axi_r_payload_data(dbus_uncached_axi_rdata),
-      .LsuCachelessAxi4Plugin_logic_axi_r_payload_id(dbus_uncached_axi_rid),
-      .LsuCachelessAxi4Plugin_logic_axi_r_payload_resp(dbus_uncached_axi_rresp),
-      .LsuCachelessAxi4Plugin_logic_axi_r_payload_last(dbus_uncached_axi_rlast),
+      .LsuCachelessAxi4Plugin_logic_axi_r_valid(cpu_dbus_uncached_axi_rvalid),
+      .LsuCachelessAxi4Plugin_logic_axi_r_ready(cpu_dbus_uncached_axi_rready),
+      .LsuCachelessAxi4Plugin_logic_axi_r_payload_data(cpu_dbus_uncached_axi_rdata),
+      .LsuCachelessAxi4Plugin_logic_axi_r_payload_id(cpu_dbus_uncached_axi_rid),
+      .LsuCachelessAxi4Plugin_logic_axi_r_payload_resp(cpu_dbus_uncached_axi_rresp),
+      .LsuCachelessAxi4Plugin_logic_axi_r_payload_last(cpu_dbus_uncached_axi_rlast),
 """
         dbus_assigns_snippet = """
-   assign dbus_uncached_axi_awlen = 1'b0;
-   assign dbus_uncached_axi_awburst = 1'b0;
-   assign dbus_uncached_axi_awlock = 1'b0;
-   assign dbus_uncached_axi_awqos = 4'b0;
-   assign dbus_uncached_axi_arlen = 1'b0;
-   assign dbus_uncached_axi_arburst = 1'b0;
-   assign dbus_uncached_axi_arlock = 1'b0;
-   assign dbus_uncached_axi_arqos = 4'b0;
+   assign cpu_dbus_uncached_axi_awlen = 1'b0;
+   assign cpu_dbus_uncached_axi_awburst = 1'b0;
+   assign cpu_dbus_uncached_axi_awlock = 1'b0;
+   assign cpu_dbus_uncached_axi_awqos = 4'b0;
+   assign cpu_dbus_uncached_axi_arlen = 1'b0;
+   assign cpu_dbus_uncached_axi_arburst = 1'b0;
+   assign cpu_dbus_uncached_axi_arlock = 1'b0;
+   assign cpu_dbus_uncached_axi_arqos = 4'b0;
 """
-
     #
     # Construct snippet
     #
