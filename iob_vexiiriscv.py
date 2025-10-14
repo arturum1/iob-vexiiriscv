@@ -189,11 +189,11 @@ def setup(py_params_dict):
                 },
             },
             {
-                "name": "uncached_d_bus",
+                "name": "bypass_d_bus",
                 "descr": "CPU data bus",
                 "signals": {
                     "type": "axi",
-                    "prefix": "uncached_dbus_",
+                    "prefix": "bypass_dbus_",
                     "ID_W": "AXI_ID_W",
                     "ADDR_W": "AXI_ADDR_W",
                     "DATA_W": "AXI_DATA_W",
@@ -408,9 +408,9 @@ def setup(py_params_dict):
     # Include iob_cache
     #
 
-    # CPU dbus -> axi2iob -> iob_split --> iob_cache --> axi_merge -> memory
-    #                                   |             |
-    #                                   |-> iob2axi  -|
+    # CPU dbus -> axi_split -> axi2iob --> iob_cache --> axi_merge -> memory
+    #                       |                         |
+    #                       |------> bypass ----------|
     #
     # The iob_split will split requests based on if the request address being included in the io region.
 
@@ -427,17 +427,8 @@ def setup(py_params_dict):
                 ],
             },
             {
-                "name": "iob_d_bus_uncached",
-                "descr": "Uncached CPU data bus",
-                "signals": {
-                    "type": "iob",
-                    "prefix": "dbus_uncached_",
-                    "ADDR_W": "AXI_ADDR_W",
-                },
-            },
-            {
                 "name": "cpu_d_bus_uncached",
-                "descr": "Uncached CPU data bus",
+                "descr": "CPU data bus",
                 "signals": {
                     "type": "axi",
                     "prefix": "cpu_dbus_uncached_",
@@ -448,8 +439,56 @@ def setup(py_params_dict):
                     "LOCK_W": 1,
                 },
             },
+            {
+                "name": "cpu2iob_d_bus",
+                "descr": "CPU data bus",
+                "signals": {
+                    "type": "axi",
+                    "prefix": "bypass_dbus_",
+                    "ID_W": "AXI_ID_W",
+                    "ADDR_W": "AXI_ADDR_W",
+                    "DATA_W": "AXI_DATA_W",
+                    "LEN_W": "AXI_LEN_W",
+                    "LOCK_W": 1,
+                },
+            },
+            {
+                "name": "iob2cache_d_bus",
+                "descr": "",
+                "signals": {
+                    "type": "iob",
+                    "prefix": "iob2cache_dbus_",
+                    "ADDR_W": "AXI_ADDR_W",
+                },
+            },
         ]
         attributes_dict["subblocks"] += [
+            {
+                "core_name": "iob_axi_split",
+                "name": "iob_vexiiriscv_dbus_axi_split",
+                "instance_name": "dbus_axi_split",
+                "instance_description": "split",
+                "addr_w": 33,  # Each manager has -1 address bit (32 bits each). Subordinate has 33 bits (32 address + 1 selector)
+                "lock_w": 1,
+                "parameters": {
+                    "ID_W": "AXI_ID_W",
+                    "LEN_W": "AXI_LEN_W",
+                },
+                "num_managers": 2,
+                "connect": {
+                    "clk_en_rst_s": "clk_en_rst_s",
+                    "reset_i": "rst_i",
+                    "s_s": (
+                        "cpu_d_bus_uncached",
+                        [
+                            "{inside_io_region_write, cpu_dbus_uncached_axi_awaddr}",
+                            "{inside_io_region_read, cpu_dbus_uncached_axi_araddr}",
+                        ],
+                    ),
+                    "m_0_m": "cpu2iob_d_bus",
+                    "m_1_m": "bypass_d_bus",
+                },
+            },
             {
                 "core_name": "iob_axi2iob",
                 "instance_name": "dbus_axi2iob_coverter",
@@ -462,27 +501,9 @@ def setup(py_params_dict):
                 },
                 "connect": {
                     "clk_en_rst_s": "clk_en_rst_s",
-                    "axi_s": "cpu_d_bus_uncached",
-                    "iob_m": "iob_d_bus_uncached",
+                    "axi_s": "cpu2iob_d_bus",
+                    "iob_m": "iob2cache_d_bus",
                 },
-            },
-            {
-                "core_name": "iob_split",
-                "name": "iob_vexiiriscv_dbus_iob_split",
-                "instance_name": "dbus_iob_split",
-                "instance_description": "Split between cache and bypass",
-                "connect": {
-                    "clk_en_rst_s": "clk_en_rst_s",
-                    "reset_i": "rst_i",
-                    "input_s": (
-                        "iob_d_bus_uncached",
-                        ["{inside_io_region, dbus_uncached_iob_addr}"],
-                    ),
-                    "output_0_m": "iob_d_bus_cache",
-                    "output_1_m": "iob_d_bus_bypass",
-                },
-                "num_outputs": 2,
-                "addr_w": 33,  # Each manager has -1 address bit (32 bits each). Subordinate has 33 bits (32 address + 1 selector)
             },
             {
                 "core_name": "iob_cache",
@@ -503,33 +524,16 @@ def setup(py_params_dict):
                 },
                 "connect": {
                     "clk_en_rst_s": "clk_en_rst_s",
-                    "iob_s": "iob_d_bus_cache",
+                    "iob_s": ("iob2cache_d_bus", ["iob2cache_dbus_iob_addr[31:2]"]),
                     "axi_m": "cached_d_bus",
                     "ie_io": "cache_ie",
-                },
-            },
-            {
-                "core_name": "iob_iob2axi",
-                "instance_name": "iob_iob2axi_coverter",
-                "instance_description": "Convert IOb from internal wire into AXI interface for manager port",
-                "parameters": {
-                    "AXI_ADDR_W": "AXI_ADDR_W",
-                    "AXI_DATA_W": "AXI_DATA_W",
-                    "AXI_ID_W": "AXI_ID_W",
-                    "AXI_LEN_W": "AXI_LEN_W",
-                    "AXI_LOCK_W": 1,
-                },
-                "connect": {
-                    "clk_en_rst_s": "clk_en_rst_s",
-                    "iob_s": "iob_d_bus_bypass",
-                    "axi_m": "uncached_d_bus",
                 },
             },
             {
                 "core_name": "iob_axi_merge",
                 "name": "iob_vexiiriscv_dbus_axi_merge",
                 "instance_name": "dbus_axi_merge",
-                "instance_description": "Merge internal data and peripheral buses into a single data bus",
+                "instance_description": "Merge",
                 "addr_w": 33,  # Each subordinate has -1 address bit (32 bits each). Manager has 33 bits (1 ignored).
                 "lock_w": 1,
                 "parameters": {
@@ -541,7 +545,7 @@ def setup(py_params_dict):
                     "clk_en_rst_s": "clk_en_rst_s",
                     "reset_i": "rst_i",
                     "s_0_s": "cached_d_bus",
-                    "s_1_s": "uncached_d_bus",
+                    "s_1_s": "bypass_d_bus",
                     "m_m": (
                         "d_bus_m",
                         [
@@ -557,7 +561,8 @@ def setup(py_params_dict):
    assign cache_invalidate_i = 1'b0;
    assign cache_wtb_empty_i = 1'b1;
 
-   wire inside_io_region = dbus_uncached_iob_addr >= 32'h{params["uncached_start_addr"]:x} && dbus_uncached_iob_addr <= 32'h{(params["uncached_start_addr"]+params["uncached_size"]-1):x};
+   wire inside_io_region_write = cpu_dbus_uncached_axi_awaddr >= 32'h{params["uncached_start_addr"]:x} && cpu_dbus_uncached_axi_awaddr <= 32'h{(params["uncached_start_addr"]+params["uncached_size"]-1):x};
+   wire inside_io_region_read = cpu_dbus_uncached_axi_araddr >= 32'h{params["uncached_start_addr"]:x} && cpu_dbus_uncached_axi_araddr <= 32'h{(params["uncached_start_addr"]+params["uncached_size"]-1):x};
 """
         # Replace connection in dbus port
         cpu_dbus_port_snippet = """
