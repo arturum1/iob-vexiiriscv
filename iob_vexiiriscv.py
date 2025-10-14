@@ -444,7 +444,7 @@ def setup(py_params_dict):
                 "descr": "CPU data bus",
                 "signals": {
                     "type": "axi",
-                    "prefix": "bypass_dbus_",
+                    "prefix": "cpu2iob_dbus_",
                     "ID_W": "AXI_ID_W",
                     "ADDR_W": "AXI_ADDR_W",
                     "DATA_W": "AXI_DATA_W",
