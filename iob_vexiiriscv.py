@@ -17,7 +17,7 @@ def setup(py_params_dict):
         "uncached_start_addr": 0x00000000,
         "uncached_size": 2**32,
         "include_icache": True,
-        "include_dcache": False,
+        "include_dcache": True,
     }
 
     # Update params with values from py_params_dict
