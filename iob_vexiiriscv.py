@@ -167,8 +167,8 @@ def setup(py_params_dict):
             {
                 "name": "unused_signals",
                 "signals": [
-                    {"name": "ibus_araddr_ignore_bit", "width": "1"},
-                    {"name": "ibus_awaddr_ignore_bit", "width": "1"},
+                    {"name": "ibus_araddr_ignore_bits", "width": "2"},
+                    {"name": "ibus_awaddr_ignore_bits", "width": "2"},
                     {"name": "dbus_araddr_ignore_bit", "width": "1"},
                     {"name": "dbus_awaddr_ignore_bit", "width": "1"},
                     {"name": "unused_rdtime", "width": "64"},
@@ -387,11 +387,11 @@ def setup(py_params_dict):
     # Include iob_cache
     #
 
-    # CPU ibus -> axi_split +-> axi2iob --> iob_cache -+-> axi_merge -> memory
-    #                       |                          |
     #                       +------> bypass -----------+
-    #
-    # CPU dbus -> axi_split +-> axi2iob --> iob_cache -+-> axi_merge -> memory
+    #                       |                          |
+    # CPU ibus -> axi_split +-> axi2iob -+> iob_cache -+-> axi_merge -> memory
+    #                                    |             |
+    # CPU dbus -> axi_split +-> axi2iob -+             |
     #                       |                          |
     #                       +------> bypass -----------+
     #
@@ -515,52 +515,46 @@ def setup(py_params_dict):
                 },
             },
             {
-                "core_name": "iob_cache",
-                "instance_name": "ibus_iob_cache",
-                "instance_description": "Cache",
+                "core_name": "iob_system_cache_system",
+                "instance_name": "cache",
+                "instance_description": "L1 and L2 caches",
                 "parameters": {
-                    "AXI_ID_W": "AXI_ID_W",
+                    "AXI_ADDR_W": "AXI_ADDR_W",
                     "AXI_DATA_W": "AXI_DATA_W",
+                    "AXI_ID_W": "AXI_ID_W",
                     "AXI_LEN_W": "AXI_LEN_W",
-                    "FE_ADDR_W": "AXI_ADDR_W",
-                    "BE_ADDR_W": "AXI_ADDR_W",
-                    "NWAYS_W": "1",  # Number of ways
-                    "NLINES_W": "7",  # Cache Line Offset (number of lines)
-                    "WORD_OFFSET_W": "3",  # Word Offset (number of words per line)
-                    "WTBUF_DEPTH_W": "5",  # FIFO's depth -- 5 minimum for BRAM implementation
-                    "USE_CTRL": "0",  # Cache-Control can't be accessed
-                    "USE_CTRL_CNT": "0",  # Remove counters
                 },
                 "connect": {
                     "clk_en_rst_s": "clk_en_rst_s",
-                    "iob_s": ("iob2cache_i_bus", ["iob2cache_ibus_iob_addr[31:2]"]),
+                    "i_bus_s": ("iob2cache_i_bus", ["iob2cache_ibus_iob_addr[31:2]"]),
+                    "d_bus_s": ("iob2cache_d_bus", ["iob2cache_dbus_iob_addr[31:2]"]),
                     "axi_m": "cached_i_bus",
-                    "ie_io": "ibus_cache_ie",
                 },
             },
             {
                 "core_name": "iob_axi_merge",
                 "name": "iob_vexiiriscv_ibus_axi_merge",
-                "instance_name": "ibus_axi_merge",
+                "instance_name": "axi_merge",
                 "instance_description": "Merge",
-                "addr_w": 33,  # Each subordinate has -1 address bit (32 bits each). Manager has 33 bits (1 ignored).
+                "addr_w": 34,  # Each subordinate has -1 address bit (32 bits each). Manager has 34 bits (2 ignored).
                 "lock_w": 1,
                 "parameters": {
                     "ID_W": "AXI_ID_W",
                     "LEN_W": "AXI_LEN_W",
                 },
-                "num_subordinates": 2,
+                "num_subordinates": 3,
                 "connect": {
                     "clk_en_rst_s": "clk_en_rst_s",
                     "reset_i": "rst_i",
                     "s_0_s": "cached_i_bus",
                     "s_1_s": "bypass_i_bus",
+                    "s_2_s": "bypass_d_bus",
                     "m_m": (
                         "i_bus_m",
                         [
-                            # Ignore most significant address bit (we only use 32 bits)
-                            "{ibus_araddr_ignore_bit, ibus_axi_araddr_o}",
-                            "{ibus_awaddr_ignore_bit, ibus_axi_awaddr_o}",
+                            # Ignore most significant address bits (we only use 32 bits)
+                            "{ibus_araddr_ignore_bits, ibus_axi_araddr_o}",
+                            "{ibus_awaddr_ignore_bits, ibus_axi_awaddr_o}",
                         ],
                     ),
                 },
@@ -711,8 +705,8 @@ def setup(py_params_dict):
                     "s_s": (
                         "cpu_d_bus_uncached",
                         [
-                            "{inside_io_region_write, cpu_dbus_uncached_axi_awaddr}",
-                            "{inside_io_region_read, cpu_dbus_uncached_axi_araddr}",
+                            "{dbus_inside_io_region_write, cpu_dbus_uncached_axi_awaddr}",
+                            "{dbus_inside_io_region_read, cpu_dbus_uncached_axi_araddr}",
                         ],
                     ),
                     "m_0_m": "cpu2iob_d_bus",
@@ -735,64 +729,13 @@ def setup(py_params_dict):
                     "iob_m": "iob2cache_d_bus",
                 },
             },
-            {
-                "core_name": "iob_cache",
-                "instance_name": "dbus_iob_cache",
-                "instance_description": "Cache",
-                "parameters": {
-                    "AXI_ID_W": "AXI_ID_W",
-                    "AXI_DATA_W": "AXI_DATA_W",
-                    "AXI_LEN_W": "AXI_LEN_W",
-                    "FE_ADDR_W": "AXI_ADDR_W",
-                    "BE_ADDR_W": "AXI_ADDR_W",
-                    "NWAYS_W": "1",  # Number of ways
-                    "NLINES_W": "7",  # Cache Line Offset (number of lines)
-                    "WORD_OFFSET_W": "3",  # Word Offset (number of words per line)
-                    "WTBUF_DEPTH_W": "5",  # FIFO's depth -- 5 minimum for BRAM implementation
-                    "USE_CTRL": "0",  # Cache-Control can't be accessed
-                    "USE_CTRL_CNT": "0",  # Remove counters
-                },
-                "connect": {
-                    "clk_en_rst_s": "clk_en_rst_s",
-                    "iob_s": ("iob2cache_d_bus", ["iob2cache_dbus_iob_addr[31:2]"]),
-                    "axi_m": "cached_d_bus",
-                    "ie_io": "dbus_cache_ie",
-                },
-            },
-            {
-                "core_name": "iob_axi_merge",
-                "name": "iob_vexiiriscv_dbus_axi_merge",
-                "instance_name": "dbus_axi_merge",
-                "instance_description": "Merge",
-                "addr_w": 33,  # Each subordinate has -1 address bit (32 bits each). Manager has 33 bits (1 ignored).
-                "lock_w": 1,
-                "parameters": {
-                    "ID_W": "AXI_ID_W",
-                    "LEN_W": "AXI_LEN_W",
-                },
-                "num_subordinates": 2,
-                "connect": {
-                    "clk_en_rst_s": "clk_en_rst_s",
-                    "reset_i": "rst_i",
-                    "s_0_s": "cached_d_bus",
-                    "s_1_s": "bypass_d_bus",
-                    "m_m": (
-                        "d_bus_m",
-                        [
-                            # Ignore most significant address bit (we only use 32 bits)
-                            "{dbus_araddr_ignore_bit, dbus_axi_araddr_o}",
-                            "{dbus_awaddr_ignore_bit, dbus_axi_awaddr_o}",
-                        ],
-                    ),
-                },
-            },
         ]
         assigns_snippet += f"""
    assign dbus_cache_invalidate_i = 1'b0;
    assign dbus_cache_wtb_empty_i = 1'b1;
 
-   wire inside_io_region_write = cpu_dbus_uncached_axi_awaddr >= 32'h{params["uncached_start_addr"]:x} && cpu_dbus_uncached_axi_awaddr <= 32'h{(params["uncached_start_addr"]+params["uncached_size"]-1):x};
-   wire inside_io_region_read = cpu_dbus_uncached_axi_araddr >= 32'h{params["uncached_start_addr"]:x} && cpu_dbus_uncached_axi_araddr <= 32'h{(params["uncached_start_addr"]+params["uncached_size"]-1):x};
+   wire dbus_inside_io_region_write = cpu_dbus_uncached_axi_awaddr >= 32'h{params["uncached_start_addr"]:x} && cpu_dbus_uncached_axi_awaddr <= 32'h{(params["uncached_start_addr"]+params["uncached_size"]-1):x};
+   wire dbus_inside_io_region_read = cpu_dbus_uncached_axi_araddr >= 32'h{params["uncached_start_addr"]:x} && cpu_dbus_uncached_axi_araddr <= 32'h{(params["uncached_start_addr"]+params["uncached_size"]-1):x};
 """
         # Replace connection in dbus port
         cpu_dbus_port_snippet = """
@@ -844,6 +787,32 @@ def setup(py_params_dict):
    assign cpu_dbus_uncached_axi_arburst = 1'b0;
    assign cpu_dbus_uncached_axi_arlock = 1'b0;
    assign cpu_dbus_uncached_axi_arqos = 4'b0;
+
+   // Unused dbus write signals
+   assign dbus_axi_araddr_o = {AXI_ADDR_W{1'b0}};
+   assign dbus_axi_arvalid_o = 1'b0;
+   assign dbus_axi_rready_o = 1'b0;
+   assign dbus_axi_arid_o = {AXI_ID_W{1'b0}};
+   assign dbus_axi_arlen_o = {AXI_LEN_W{1'b0}};
+   assign dbus_axi_arsize_o = 3'b0;
+   assign dbus_axi_arburst_o = 2'b0;
+   assign dbus_axi_arlock_o = 1'b0;
+   assign dbus_axi_arcache_o = 4'b0;
+   assign dbus_axi_arqos_o = 4'b0;
+   assign dbus_axi_awaddr_o = {AXI_ADDR_W{1'b0}};
+   assign dbus_axi_awvalid_o = 1'b0;
+   assign dbus_axi_wdata_o = {AXI_DATA_W{1'b0}};
+   assign dbus_axi_wstrb_o = {AXI_DATA_W / 8{1'b0}};
+   assign dbus_axi_wvalid_o = 1'b0;
+   assign dbus_axi_bready_o = 1'b0;
+   assign dbus_axi_awid_o = {AXI_ID_W{1'b0}};
+   assign dbus_axi_awlen_o = {AXI_LEN_W{1'b0}};
+   assign dbus_axi_awsize_o = 3'b0;
+   assign dbus_axi_awburst_o = 2'b0;
+   assign dbus_axi_awlock_o = 1'b0;
+   assign dbus_axi_awcache_o = 4'b0;
+   assign dbus_axi_awqos_o = 4'b0;
+   assign dbus_axi_wlast_o = 1'b0;
 """
     #
     # Construct snippet
