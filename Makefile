@@ -8,38 +8,40 @@ VEXII_HARDWARE_DIR:=$(VEXIIRISCV_DIR)/hardware
 VEXIIRISCV_SRC_DIR:=$(VEXII_HARDWARE_DIR)/src
 VEXII_SUBMODULES_DIR:=$(VEXIIRISCV_DIR)/submodules
 
-CPU ?= VexiiRiscvAxi4LinuxPlicClint
 JDK_HOME := $(shell dirname $$(dirname $$(which java)))
 
-# Configure VexiiRiscv CPU:
-# - Use AXI4 ibus (fetch) and dbus (lsu)
-#PARAMS ?= --fetch-axi4 --lsu-axi4
-
-# By default, vexiiriscv uses the following instruction set and extensions:
-# - xlen=32 (rv32)
-# - withRve=false (extension E = True; extension I = False)
-# - withMul=false (extension M)
-# - withRva=false (extension A)
-# - withRvf=false (extension F)
-# - withRvd=false (extension D)
-# - withRvc=false (extension C)
-#
-# Extensions S, U are disabled? and non-configurable via command line arguments (But can be enabled with --debug-privileged).
+# Linux-compatible VexiiRiscv configuration with AXI4 interfaces
+# - 32-bit RISC-V with supervisor mode (required for Linux)
+# - AXI4 interfaces for instruction and data buses
+# - L1 caches for both fetch and LSU
+# - Memory regions:
+#   - 0x00000000-0x7FFFFFFF: Cached (main)
+#   - 0x80000000-0xBFFFFFFF: Uncached (IO)
+#   - 0xC0000000-0xFFFFFFFF: Cached (main)
+PARAMS ?= \
+	--xlen=32 \
+	--reset-vector=0x40000000 \
+	--region base=0,size=80000000,main=1,exe=1 \
+	--region base=80000000,size=40000000,main=0,exe=1 \
+	--region base=c0000000,size=40000000,main=1,exe=1 \
+	--with-rvm \
+	--with-rvc \
+	--with-supervisor \
+	--fetch-l1 \
+	--lsu-l1 \
+	--fetch-axi4 \
+	--lsu-l1-axi4 \
+	--with-btb \
+	--with-gshare \
+	--with-ras
 
 # Primary targets
 vexiiriscv:
-	#mkdir -p $(VEXII_SUBMODULES_DIR)/VexiiRiscv/src/main/scala/vexiiriscv/platform
-	cp $(VEXII_HARDWARE_DIR)/vexiiriscv_core/VexiiRiscvAxi4LinuxPlicClint.scala $(VEXII_SUBMODULES_DIR)/VexiiRiscv/src/main/scala/vexiiriscv/
-	cp $(VEXII_HARDWARE_DIR)/vexiiriscv_core/PcPlugin.scala $(VEXII_SUBMODULES_DIR)/VexiiRiscv/src/main/scala/vexiiriscv/fetch/
-	#cp $(VEXII_HARDWARE_DIR)/vexiiriscv_core/MmuPlugin.scala $(VEXII_SUBMODULES_DIR)/VexiiRiscv/src/main/scala/vexiiriscv/misc/
-	#cp $(VEXII_HARDWARE_DIR)/vexiiriscv_core/LsuPlugin.scala $(VEXII_SUBMODULES_DIR)/VexiiRiscv/src/main/scala/vexiiriscv/lsu/
-	# (Re-)try to apply these patches: https://github.com/SpinalHDL/VexiiRiscv/issues/140#issuecomment-2725576402
-	#-make -C submodules/VexiiRiscv install-core
 	# Run sbt to build CPU and copy generated verilog to this repo
 	cd submodules/VexiiRiscv && \
-	sbt -java-home $(JDK_HOME) "runMain vexiiriscv.$(CPU) $(PARAMS)" && \
-	cp $(CPU).v $(VEXIIRISCV_SRC_DIR)/$(CPU).v
-	#cp $(CPU).v_*.bin $(VEXII_HARDWARE_DIR)/init_mems
+	sbt "runMain vexiiriscv.Generate $(PARAMS)" && \
+	mkdir -p $(VEXIIRISCV_SRC_DIR) && \
+	cp VexiiRiscv.v $(VEXIIRISCV_SRC_DIR)/
 
 vexiiriscv-help:
 	cd submodules/VexiiRiscv && \
@@ -49,7 +51,7 @@ vexiiriscv-help:
 # Clean
 #
 clean-vexiiriscv:
-	rm $(VEXIIRISCV_SRC_DIR)/$(CPU).v
+	rm -f $(VEXIIRISCV_SRC_DIR)/VexiiRiscv.v
 
 clean-all: clean-vexiiriscv
 

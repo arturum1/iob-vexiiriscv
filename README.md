@@ -18,7 +18,7 @@ Run `nix-shell` from the root of the repository to create the environment.
 - clean-all: do all of the cleaning above
 
 ## Makefile Variables
-- CPU: by default it has the value `VexiiRiscvAxi4LinuxPlicClint`. However, the value could be any of the CPUs present in the VexiiRiscv platform directory (`submodules/VexiiRiscv/src/main/scala/vexiiriscv/platform/`).
+- CPU: by default it has the value `VexiiRiscvAxi4Linux`. However, the value could be any of the CPUs present in the VexiiRiscv platform directory (`submodules/VexiiRiscv/src/main/scala/vexiiriscv/platform/`).
 
 ## Example:
 To generate a new VexiiRiscv.v simply do:
