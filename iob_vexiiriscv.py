@@ -242,7 +242,7 @@ def setup(py_params_dict):
       .dBusAxi_awvalid(cached_dbus_axi_awvalid),
       .dBusAxi_awready(cached_dbus_axi_awready),
       .dBusAxi_awaddr(cached_dbus_axi_awaddr),
-      .dBusAxi_awlen(cached_dbus_axi_awlen),
+      .dBusAxi_awlen(cached_dbus_axi_awlen_int),
       .dBusAxi_awsize(cached_dbus_axi_awsize),
       .dBusAxi_awburst(cached_dbus_axi_awburst),
       .dBusAxi_awcache(cached_dbus_axi_awcache),
@@ -258,7 +258,7 @@ def setup(py_params_dict):
       .dBusAxi_arvalid(cached_dbus_axi_arvalid),
       .dBusAxi_arready(cached_dbus_axi_arready),
       .dBusAxi_araddr(cached_dbus_axi_araddr),
-      .dBusAxi_arlen(cached_dbus_axi_arlen),
+      .dBusAxi_arlen(cached_dbus_axi_arlen_int),
       .dBusAxi_arsize(cached_dbus_axi_arsize),
       .dBusAxi_arburst(cached_dbus_axi_arburst),
       .dBusAxi_arcache(cached_dbus_axi_arcache),
@@ -322,7 +322,7 @@ def setup(py_params_dict):
    assign ibus_axi_arid_o = 1'b0;
    assign ibus_axi_arlock_o = 1'b0;
    assign ibus_axi_arqos_o = 1'b0;
-   // ibus_axi_rid_i
+   // ibus_axi_rid
 
    // Unused signals (cached) dbus
    assign cached_dbus_axi_awid = 1'b0;
@@ -331,8 +331,8 @@ def setup(py_params_dict):
    assign cached_dbus_axi_arid = 1'b0;
    assign cached_dbus_axi_arlock = 1'b0;
    assign cached_dbus_axi_arqos = {4{1'b0}};
-   // cached_dbus_axi_bid_i
-   // cached_dbus_axi_rid_i
+   // cached_dbus_axi_bid
+   // cached_dbus_axi_rid
 
    // Unused signals iobus
    assign iobus_axi_awid = 1'b0;
@@ -343,8 +343,10 @@ def setup(py_params_dict):
    assign iobus_axi_arqos = {4{1'b0}};
    assign iobus_axi_awburst = {2{1'b0}};
    assign iobus_axi_arburst = {2{1'b0}};
-   // iobus_axi_bid_i
-   // iobus_axi_rid_i
+   assign iobus_axi_arlen = {AXI_LEN_W{1'b0}};
+   assign iobus_axi_awlen = {AXI_LEN_W{1'b0}};
+   // iobus_axi_bid
+   // iobus_axi_rid
 
 
    generate

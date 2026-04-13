@@ -35,7 +35,6 @@ def add_io_region_params(verilog, io_base, io_size):
 ) """
     
     # Insert parameters before the port list
-    # Matches "module VexiiRiscv ("
     verilog = re.sub(
         r'(module VexiiRiscv )\s*\(',
         r'\1' + params + r'(',
@@ -47,8 +46,6 @@ def add_io_region_params(verilog, io_base, io_size):
   localparam [31:0] IO_REGION_END = IO_REGION_BASE + IO_REGION_SIZE;
 """
     
-    # We look for the first ");" that appears after "module VexiiRiscv"
-    # and insert the localparam immediately after it.
     pattern = r'(module VexiiRiscv.*?\);)'
     verilog = re.sub(
         pattern,
@@ -59,6 +56,7 @@ def add_io_region_params(verilog, io_base, io_size):
     )
     
     # Replace FetchL1Plugin IO check (instruction fetch)
+    # Marks the address as "io" (uncached) if it's in the IO region
     verilog = re.sub(
         r'(_zz_FetchL1Plugin_logic_ctrl_pmaPort_rsp_io = )\(\|\{[^}]+\}\);',
         r'\1((FetchL1Plugin_pmaBuilder_addressBits >= IO_REGION_BASE) && (FetchL1Plugin_pmaBuilder_addressBits < IO_REGION_END));',
@@ -73,9 +71,12 @@ def add_io_region_params(verilog, io_base, io_size):
     )
     
     # Replace LsuPlugin cached fault check (load/store to L1 cache)
+    # This is TRUE if the address is NOT in a "Main" (cacheable) region.
+    # We define MAIN as everything outside the IO region for simplicity,
+    # or more strictly: fault = is_io || !is_hit
     verilog = re.sub(
         r'(LsuPlugin_logic_onPma_cached_rsp_fault = )\(\! \(\(\|\{[^}]+\}\) && \(\|LsuPlugin_pmaBuilder_l1_onTransfers_0_hit\)\)\);',
-        r'\1(((LsuPlugin_pmaBuilder_l1_addressBits >= IO_REGION_BASE) && (LsuPlugin_pmaBuilder_l1_addressBits < IO_REGION_END)) && (|LsuPlugin_pmaBuilder_l1_onTransfers_0_hit));',
+        r'\1(! (!((LsuPlugin_pmaBuilder_l1_addressBits >= IO_REGION_BASE) && (LsuPlugin_pmaBuilder_l1_addressBits < IO_REGION_END)) && (|LsuPlugin_pmaBuilder_l1_onTransfers_0_hit)));',
         verilog
     )
     

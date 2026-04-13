@@ -8430,7 +8430,7 @@ module VexiiRiscv #(
   assign LsuPlugin_pmaBuilder_l1_onTransfers_0_addressHit = _zz_LsuPlugin_pmaBuilder_l1_onTransfers_0_addressHit[0];
   assign LsuPlugin_pmaBuilder_l1_onTransfers_0_argsHit = (|((LsuPlugin_pmaBuilder_l1_argsBits & 1'b0) == 1'b0));
   assign LsuPlugin_pmaBuilder_l1_onTransfers_0_hit = (LsuPlugin_pmaBuilder_l1_onTransfers_0_argsHit && LsuPlugin_pmaBuilder_l1_onTransfers_0_addressHit);
-  assign LsuPlugin_logic_onPma_cached_rsp_fault = (((LsuPlugin_pmaBuilder_l1_addressBits >= IO_REGION_BASE) && (LsuPlugin_pmaBuilder_l1_addressBits < IO_REGION_END)) && (|LsuPlugin_pmaBuilder_l1_onTransfers_0_hit));
+  assign LsuPlugin_logic_onPma_cached_rsp_fault = (! (!((LsuPlugin_pmaBuilder_l1_addressBits >= IO_REGION_BASE) && (LsuPlugin_pmaBuilder_l1_addressBits < IO_REGION_END)) && (|LsuPlugin_pmaBuilder_l1_onTransfers_0_hit)));
   assign LsuPlugin_logic_onPma_cached_rsp_io = (! _zz_LsuPlugin_logic_onPma_cached_rsp_io_1[0]);
   assign LsuPlugin_pmaBuilder_io_addressBits = LsuPlugin_logic_onPma_io_cmd_address;
   assign LsuPlugin_pmaBuilder_io_argsBits = {LsuPlugin_logic_onPma_io_cmd_size,LsuPlugin_logic_onPma_io_cmd_op};
