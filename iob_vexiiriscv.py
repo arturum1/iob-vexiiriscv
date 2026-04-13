@@ -164,8 +164,8 @@ def setup(py_params_dict):
             {
                 "name": "internal_wires",
                 "signals": [
-                    {"name": "ibus_araddr_ignore_bits", "width": 1},
-                    {"name": "ibus_awaddr_ignore_bits", "width": 1},
+                    {"name": "dbus_araddr_ignore_bits", "width": 1},
+                    {"name": "dbus_awaddr_ignore_bits", "width": 1},
                 ],
             },
         ],
@@ -210,7 +210,7 @@ def setup(py_params_dict):
   VexiiRiscv #(
 """ + f"""\
       .IO_REGION_BASE (32'h{params["uncached_start_addr"]:x}),
-      .IO_REGION_END  (32'h{params["uncached_size"]:x}),
+      .IO_REGION_SIZE (32'h{params["uncached_size"]:x})
 """ + """\
   ) CPU (
       // Interrupt sources
@@ -239,61 +239,61 @@ def setup(py_params_dict):
       .iBusAxi_rresp(ibus_axi_rresp_i),
       .iBusAxi_rlast(ibus_axi_rlast_i),
       // Cached Data Bus
-      .dBusAxi_awvalid(cached_dbus_axi_awvalid_o),
-      .dBusAxi_awready(cached_dbus_axi_awready_i),
-      .dBusAxi_awaddr(cached_dbus_axi_awaddr_o),
-      .dBusAxi_awlen(cached_dbus_axi_awlen_int),
-      .dBusAxi_awsize(cached_dbus_axi_awsize_o),
-      .dBusAxi_awburst(cached_dbus_axi_awburst_o),
-      .dBusAxi_awcache(cached_dbus_axi_awcache_o),
+      .dBusAxi_awvalid(cached_dbus_axi_awvalid),
+      .dBusAxi_awready(cached_dbus_axi_awready),
+      .dBusAxi_awaddr(cached_dbus_axi_awaddr),
+      .dBusAxi_awlen(cached_dbus_axi_awlen),
+      .dBusAxi_awsize(cached_dbus_axi_awsize),
+      .dBusAxi_awburst(cached_dbus_axi_awburst),
+      .dBusAxi_awcache(cached_dbus_axi_awcache),
       .dBusAxi_awprot(),
-      .dBusAxi_wvalid(cached_dbus_axi_wvalid_o),
-      .dBusAxi_wready(cached_dbus_axi_wready_i),
-      .dBusAxi_wdata(cached_dbus_axi_wdata_o),
-      .dBusAxi_wstrb(cached_dbus_axi_wstrb_o),
-      .dBusAxi_wlast(cached_dbus_axi_wlast_o),
-      .dBusAxi_bvalid(cached_dbus_axi_bvalid_i),
-      .dBusAxi_bready(cached_dbus_axi_bready_o),
-      .dBusAxi_bresp(cached_dbus_axi_bresp_i),
-      .dBusAxi_arvalid(cached_dbus_axi_arvalid_o),
-      .dBusAxi_arready(cached_dbus_axi_arready_i),
-      .dBusAxi_araddr(cached_dbus_axi_araddr_o),
-      .dBusAxi_arlen(cached_dbus_axi_arlen_int),
-      .dBusAxi_arsize(cached_dbus_axi_arsize_o),
-      .dBusAxi_arburst(cached_dbus_axi_arburst_o),
-      .dBusAxi_arcache(cached_dbus_axi_arcache_o),
+      .dBusAxi_wvalid(cached_dbus_axi_wvalid),
+      .dBusAxi_wready(cached_dbus_axi_wready),
+      .dBusAxi_wdata(cached_dbus_axi_wdata),
+      .dBusAxi_wstrb(cached_dbus_axi_wstrb),
+      .dBusAxi_wlast(cached_dbus_axi_wlast),
+      .dBusAxi_bvalid(cached_dbus_axi_bvalid),
+      .dBusAxi_bready(cached_dbus_axi_bready),
+      .dBusAxi_bresp(cached_dbus_axi_bresp),
+      .dBusAxi_arvalid(cached_dbus_axi_arvalid),
+      .dBusAxi_arready(cached_dbus_axi_arready),
+      .dBusAxi_araddr(cached_dbus_axi_araddr),
+      .dBusAxi_arlen(cached_dbus_axi_arlen),
+      .dBusAxi_arsize(cached_dbus_axi_arsize),
+      .dBusAxi_arburst(cached_dbus_axi_arburst),
+      .dBusAxi_arcache(cached_dbus_axi_arcache),
       .dBusAxi_arprot(),
-      .dBusAxi_rvalid(cached_dbus_axi_rvalid_i),
-      .dBusAxi_rready(cached_dbus_axi_rready_o),
-      .dBusAxi_rdata(cached_dbus_axi_rdata_i),
-      .dBusAxi_rresp(cached_dbus_axi_rresp_i),
-      .dBusAxi_rlast(cached_dbus_axi_rlast_i),
+      .dBusAxi_rvalid(cached_dbus_axi_rvalid),
+      .dBusAxi_rready(cached_dbus_axi_rready),
+      .dBusAxi_rdata(cached_dbus_axi_rdata),
+      .dBusAxi_rresp(cached_dbus_axi_rresp),
+      .dBusAxi_rlast(cached_dbus_axi_rlast),
       // Uncached IO Bus
-      .ioBusAxi_awvalid(iobus_axi_awvalid_o),
-      .ioBusAxi_awready(iobus_axi_awready_i),
-      .ioBusAxi_awaddr(iobus_axi_awaddr_o),
-      .ioBusAxi_awsize(iobus_axi_awsize_o),
-      .ioBusAxi_awcache(iobus_axi_awcache_o),
+      .ioBusAxi_awvalid(iobus_axi_awvalid),
+      .ioBusAxi_awready(iobus_axi_awready),
+      .ioBusAxi_awaddr(iobus_axi_awaddr),
+      .ioBusAxi_awsize(iobus_axi_awsize),
+      .ioBusAxi_awcache(iobus_axi_awcache),
       .ioBusAxi_awprot(),
-      .ioBusAxi_wvalid(iobus_axi_wvalid_o),
-      .ioBusAxi_wready(iobus_axi_wready_i),
-      .ioBusAxi_wdata(iobus_axi_wdata_o),
-      .ioBusAxi_wstrb(iobus_axi_wstrb_o),
-      .ioBusAxi_wlast(iobus_axi_wlast_o),
-      .ioBusAxi_bvalid(iobus_axi_bvalid_i),
-      .ioBusAxi_bready(iobus_axi_bready_o),
-      .ioBusAxi_bresp(iobus_axi_bresp_i),
-      .ioBusAxi_arvalid(iobus_axi_arvalid_o),
-      .ioBusAxi_arready(iobus_axi_arready_i),
-      .ioBusAxi_araddr(iobus_axi_araddr_o),
-      .ioBusAxi_arsize(iobus_axi_arsize_o),
-      .ioBusAxi_arcache(iobus_axi_arcache_o),
+      .ioBusAxi_wvalid(iobus_axi_wvalid),
+      .ioBusAxi_wready(iobus_axi_wready),
+      .ioBusAxi_wdata(iobus_axi_wdata),
+      .ioBusAxi_wstrb(iobus_axi_wstrb),
+      .ioBusAxi_wlast(iobus_axi_wlast),
+      .ioBusAxi_bvalid(iobus_axi_bvalid),
+      .ioBusAxi_bready(iobus_axi_bready),
+      .ioBusAxi_bresp(iobus_axi_bresp),
+      .ioBusAxi_arvalid(iobus_axi_arvalid),
+      .ioBusAxi_arready(iobus_axi_arready),
+      .ioBusAxi_araddr(iobus_axi_araddr),
+      .ioBusAxi_arsize(iobus_axi_arsize),
+      .ioBusAxi_arcache(iobus_axi_arcache),
       .ioBusAxi_arprot(),
-      .ioBusAxi_rvalid(iobus_axi_rvalid_i),
-      .ioBusAxi_rready(iobus_axi_rready_o),
-      .ioBusAxi_rdata(iobus_axi_rdata_i),
-      .ioBusAxi_rresp(iobus_axi_rresp_i),
-      .ioBusAxi_rlast(iobus_axi_rlast_i),
+      .ioBusAxi_rvalid(iobus_axi_rvalid),
+      .ioBusAxi_rready(iobus_axi_rready),
+      .ioBusAxi_rdata(iobus_axi_rdata),
+      .ioBusAxi_rresp(iobus_axi_rresp),
+      .ioBusAxi_rlast(iobus_axi_rlast),
       // Clock and Reset
       .clk(clk_i),
       .reset(cpu_reset)
@@ -325,24 +325,24 @@ def setup(py_params_dict):
    // ibus_axi_rid_i
 
    // Unused signals (cached) dbus
-   assign cached_dbus_axi_awid_o = 1'b0;
-   assign cached_dbus_axi_awlock_o = 1'b0;
-   assign cached_dbus_axi_awqos_o = {4{1'b0}};
-   assign cached_dbus_axi_arid_o = 1'b0;
-   assign cached_dbus_axi_arlock_o = 1'b0;
-   assign cached_dbus_axi_arqos_o = {4{1'b0}};
+   assign cached_dbus_axi_awid = 1'b0;
+   assign cached_dbus_axi_awlock = 1'b0;
+   assign cached_dbus_axi_awqos = {4{1'b0}};
+   assign cached_dbus_axi_arid = 1'b0;
+   assign cached_dbus_axi_arlock = 1'b0;
+   assign cached_dbus_axi_arqos = {4{1'b0}};
    // cached_dbus_axi_bid_i
    // cached_dbus_axi_rid_i
 
    // Unused signals iobus
-   assign iobus_axi_awid_o = 1'b0;
-   assign iobus_axi_awlock_o = 1'b0;
-   assign iobus_axi_awqos_o = {4{1'b0}};
-   assign iobus_axi_arid_o = 1'b0;
-   assign iobus_axi_arlock_o = 1'b0;
-   assign iobus_axi_arqos_o = {4{1'b0}};
-   assign iobus_axi_awburst_o = {2{1'b0}};
-   assign iobus_axi_arburst_o = {2{1'b0}};
+   assign iobus_axi_awid = 1'b0;
+   assign iobus_axi_awlock = 1'b0;
+   assign iobus_axi_awqos = {4{1'b0}};
+   assign iobus_axi_arid = 1'b0;
+   assign iobus_axi_arlock = 1'b0;
+   assign iobus_axi_arqos = {4{1'b0}};
+   assign iobus_axi_awburst = {2{1'b0}};
+   assign iobus_axi_arburst = {2{1'b0}};
    // iobus_axi_bid_i
    // iobus_axi_rid_i
 
@@ -350,12 +350,12 @@ def setup(py_params_dict):
    generate
       if (AXI_LEN_W < 8) begin : gen_if_less_than_8
          assign ibus_axi_arlen_o = ibus_axi_arlen_int[AXI_LEN_W-1:0];
-         assign cached_dbus_axi_arlen_o = cached_dbus_axi_arlen_int[AXI_LEN_W-1:0];
-         assign cached_dbus_axi_awlen_o = cached_dbus_axi_awlen_int[AXI_LEN_W-1:0];
+         assign cached_dbus_axi_arlen = cached_dbus_axi_arlen_int[AXI_LEN_W-1:0];
+         assign cached_dbus_axi_awlen = cached_dbus_axi_awlen_int[AXI_LEN_W-1:0];
       end else begin : gen_if_equal_8
          assign ibus_axi_arlen_o = ibus_axi_arlen_int;
-         assign cached_dbus_axi_arlen_o = cached_dbus_axi_arlen_int;
-         assign cached_dbus_axi_awlen_o = cached_dbus_axi_awlen_int;
+         assign cached_dbus_axi_arlen = cached_dbus_axi_arlen_int;
+         assign cached_dbus_axi_awlen = cached_dbus_axi_awlen_int;
       end
    endgenerate
 """
