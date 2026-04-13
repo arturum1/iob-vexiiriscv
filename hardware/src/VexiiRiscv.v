@@ -5,6 +5,9 @@
 `timescale 1ns/1ps
 
 module VexiiRiscv (
+// IO region configuration (can be updated with update_io_region.py)
+  localparam [31:0] IO_REGION_BASE = 32'h80000000;
+  localparam [31:0] IO_REGION_END = 32'hc0000000;
   output wire          dBusAxi_awvalid,
   input  wire          dBusAxi_awready,
   output wire [31:0]   dBusAxi_awaddr,
@@ -77,6 +80,7 @@ module VexiiRiscv (
   input  wire [31:0]   ioBusAxi_rdata,
   input  wire [1:0]    ioBusAxi_rresp,
   input  wire          ioBusAxi_rlast,
+  input  wire [31:0]   resetVector,
   input  wire          clk,
   input  wire          reset
 );
@@ -3547,7 +3551,7 @@ module VexiiRiscv (
   wire                _zz_PcPlugin_logic_harts_0_aggregator_target_1;
   wire                _zz_PcPlugin_logic_harts_0_aggregator_target_2;
   wire                _zz_PcPlugin_logic_harts_0_aggregator_fault_1;
-  wire                when_PcPlugin_l80;
+  wire                when_PcPlugin_l83;
   wire                PcPlugin_logic_harts_0_holdComb;
   reg                 PcPlugin_logic_harts_0_holdReg;
   wire                PcPlugin_logic_harts_0_outputvalid;
@@ -3556,7 +3560,7 @@ module VexiiRiscv (
   wire                PcPlugin_logic_harts_0_outputfault;
   wire                PcPlugin_logic_harts_0_output_fire;
   wire                PcPlugin_logic_holdHalter_doIt;
-  wire                fetch_logic_ctrls_0_haltRequest_PcPlugin_l133;
+  wire                fetch_logic_ctrls_0_haltRequest_PcPlugin_l136;
   wire                CsrAccessPlugin_logic_fsm_wantExit;
   reg                 CsrAccessPlugin_logic_fsm_wantStart;
   wire                CsrAccessPlugin_logic_fsm_wantKill;
@@ -4269,7 +4273,7 @@ module VexiiRiscv (
   assign _zz_BtbPlugin_logic_ras_ptr_pop_aheadValue_3 = {1'd0, _zz_BtbPlugin_logic_ras_ptr_pop_aheadValue_4};
   assign _zz_WhiteboxerPlugin_logic_decodes_0_pc = {32'd0, decode_ctrls_0_down_PC_0};
   assign _zz_FetchL1Plugin_pmaBuilder_onTransfers_0_addressHit = (|_zz_FetchL1Plugin_logic_ctrl_pmaPort_rsp_fault);
-  assign _zz_FetchL1Plugin_logic_ctrl_pmaPort_rsp_io = (|{((FetchL1Plugin_pmaBuilder_addressBits & 32'h40000000) == 32'h40000000),((FetchL1Plugin_pmaBuilder_addressBits & 32'h80000000) == 32'h0)});
+  assign _zz_FetchL1Plugin_logic_ctrl_pmaPort_rsp_io = ((FetchL1Plugin_pmaBuilder_addressBits >= IO_REGION_BASE) && (FetchL1Plugin_pmaBuilder_addressBits < IO_REGION_END));
   assign _zz__zz_execute_ctrl1_down_early0_SrcPlugin_SRC2_lane0 = execute_ctrl1_down_Decode_UOP_lane0[31 : 20];
   assign _zz__zz_execute_ctrl1_down_early0_SrcPlugin_SRC2_lane0_1 = {execute_ctrl1_down_Decode_UOP_lane0[31 : 25],execute_ctrl1_down_Decode_UOP_lane0[11 : 7]};
   assign _zz_execute_ctrl2_down_early0_SrcPlugin_ADD_SUB_lane0 = ($signed(execute_ctrl2_down_early0_SrcPlugin_SRC1_lane0) + $signed(early0_SrcPlugin_logic_addsub_combined_rs2Patched));
@@ -4307,7 +4311,7 @@ module VexiiRiscv (
   assign _zz_LsuPlugin_pmaBuilder_l1_onTransfers_0_addressHit = (|_zz_LsuPlugin_logic_onPma_cached_rsp_io);
   assign _zz_LsuPlugin_logic_onPma_cached_rsp_io_1 = (|_zz_LsuPlugin_logic_onPma_cached_rsp_io);
   assign _zz_LsuPlugin_pmaBuilder_io_onTransfers_0_addressHit = (|_zz_LsuPlugin_logic_onPma_io_rsp_fault);
-  assign _zz_LsuPlugin_logic_onPma_io_rsp_io = (|{((LsuPlugin_pmaBuilder_io_addressBits & 32'h40000000) == 32'h40000000),((LsuPlugin_pmaBuilder_io_addressBits & 32'h80000000) == 32'h0)});
+  assign _zz_LsuPlugin_logic_onPma_io_rsp_io = ((LsuPlugin_pmaBuilder_io_addressBits >= IO_REGION_BASE) && (LsuPlugin_pmaBuilder_io_addressBits < IO_REGION_END));
   assign _zz_decode_ctrls_1_down_RS1_ENABLE_0 = (|{((decode_ctrls_1_down_Decode_INSTRUCTION_0 & 32'h00000044) == 32'h0),{((decode_ctrls_1_down_Decode_INSTRUCTION_0 & 32'h00000018) == 32'h0),{((decode_ctrls_1_down_Decode_INSTRUCTION_0 & 32'h00006004) == 32'h00002000),((decode_ctrls_1_down_Decode_INSTRUCTION_0 & 32'h00005004) == 32'h00001000)}}});
   assign _zz_decode_ctrls_1_down_RS1_PHYS_0 = decode_ctrls_1_down_Decode_INSTRUCTION_0[19 : 15];
   assign _zz_decode_ctrls_1_down_RS2_ENABLE_0 = (|{((decode_ctrls_1_down_Decode_INSTRUCTION_0 & 32'h00000034) == 32'h00000020),((decode_ctrls_1_down_Decode_INSTRUCTION_0 & 32'h00000064) == 32'h00000020)});
@@ -5575,14 +5579,14 @@ module VexiiRiscv (
 
   always @(*) begin
     PcPlugin_logic_harts_0_aggregator_fault_1 = PcPlugin_logic_harts_0_aggregator_fault;
-    if(when_PcPlugin_l80) begin
+    if(when_PcPlugin_l83) begin
       PcPlugin_logic_harts_0_aggregator_fault_1 = _zz_PcPlugin_logic_harts_0_aggregator_fault_1_1[0];
     end
   end
 
   always @(*) begin
     PcPlugin_logic_harts_0_aggregator_target_1 = PcPlugin_logic_harts_0_aggregator_target;
-    if(when_PcPlugin_l80) begin
+    if(when_PcPlugin_l83) begin
       PcPlugin_logic_harts_0_aggregator_target_1 = (_zz_PcPlugin_logic_harts_0_aggregator_fault_1 ? BtbPlugin_logic_pcPortpc : 32'h0);
     end
   end
@@ -8424,7 +8428,7 @@ module VexiiRiscv (
   assign LsuPlugin_pmaBuilder_l1_onTransfers_0_addressHit = _zz_LsuPlugin_pmaBuilder_l1_onTransfers_0_addressHit[0];
   assign LsuPlugin_pmaBuilder_l1_onTransfers_0_argsHit = (|((LsuPlugin_pmaBuilder_l1_argsBits & 1'b0) == 1'b0));
   assign LsuPlugin_pmaBuilder_l1_onTransfers_0_hit = (LsuPlugin_pmaBuilder_l1_onTransfers_0_argsHit && LsuPlugin_pmaBuilder_l1_onTransfers_0_addressHit);
-  assign LsuPlugin_logic_onPma_cached_rsp_fault = (! ((|{((LsuPlugin_pmaBuilder_l1_addressBits & 32'h80000000) == 32'h0),((LsuPlugin_pmaBuilder_l1_addressBits & 32'hc0000000) == 32'hc0000000)}) && (|LsuPlugin_pmaBuilder_l1_onTransfers_0_hit)));
+  assign LsuPlugin_logic_onPma_cached_rsp_fault = (((LsuPlugin_pmaBuilder_l1_addressBits >= IO_REGION_BASE) && (LsuPlugin_pmaBuilder_l1_addressBits < IO_REGION_END)) && (|LsuPlugin_pmaBuilder_l1_onTransfers_0_hit));
   assign LsuPlugin_logic_onPma_cached_rsp_io = (! _zz_LsuPlugin_logic_onPma_cached_rsp_io_1[0]);
   assign LsuPlugin_pmaBuilder_io_addressBits = LsuPlugin_logic_onPma_io_cmd_address;
   assign LsuPlugin_pmaBuilder_io_argsBits = {LsuPlugin_logic_onPma_io_cmd_size,LsuPlugin_logic_onPma_io_cmd_op};
@@ -9915,7 +9919,7 @@ module VexiiRiscv (
   assign PcPlugin_logic_harts_0_aggregator_target = (((_zz_PcPlugin_logic_harts_0_aggregator_target ? TrapPlugin_logic_harts_0_trap_pcPortpc : 32'h0) | (_zz_PcPlugin_logic_harts_0_aggregator_target_1 ? early0_BranchPlugin_logic_pcPortpc : 32'h0)) | (_zz_PcPlugin_logic_harts_0_aggregator_target_2 ? PcPlugin_logic_harts_0_self_flowpc : 32'h0));
   assign PcPlugin_logic_harts_0_aggregator_fault = _zz_PcPlugin_logic_harts_0_aggregator_fault[0];
   assign _zz_PcPlugin_logic_harts_0_aggregator_fault_1 = PcPlugin_logic_harts_0_aggregator_oh[2];
-  assign when_PcPlugin_l80 = (|_zz_PcPlugin_logic_harts_0_aggregator_fault_1);
+  assign when_PcPlugin_l83 = (|_zz_PcPlugin_logic_harts_0_aggregator_fault_1);
   assign PcPlugin_logic_harts_0_holdComb = (|TrapPlugin_logic_harts_0_trap_fsm_holdPort);
   assign PcPlugin_logic_harts_0_outputvalid = (! PcPlugin_logic_harts_0_holdReg);
   assign PcPlugin_logic_harts_0_outputfault = PcPlugin_logic_harts_0_aggregator_fault_1;
@@ -9935,7 +9939,7 @@ module VexiiRiscv (
   end
 
   assign PcPlugin_logic_holdHalter_doIt = PcPlugin_logic_harts_0_holdComb;
-  assign fetch_logic_ctrls_0_haltRequest_PcPlugin_l133 = PcPlugin_logic_holdHalter_doIt;
+  assign fetch_logic_ctrls_0_haltRequest_PcPlugin_l136 = PcPlugin_logic_holdHalter_doIt;
   assign CsrAccessPlugin_logic_fsm_wantExit = 1'b0;
   always @(*) begin
     CsrAccessPlugin_logic_fsm_wantStart = 1'b0;
@@ -12492,7 +12496,7 @@ module VexiiRiscv (
     end
   end
 
-  assign when_CtrlLink_l191 = (|{fetch_logic_ctrls_0_haltRequest_PcPlugin_l133,{fetch_logic_ctrls_0_haltRequest_BtbPlugin_l200,{fetch_logic_ctrls_0_haltRequest_FetchL1Plugin_l297,fetch_logic_ctrls_0_haltRequest_FetchL1Plugin_l217}}});
+  assign when_CtrlLink_l191 = (|{fetch_logic_ctrls_0_haltRequest_PcPlugin_l136,{fetch_logic_ctrls_0_haltRequest_BtbPlugin_l200,{fetch_logic_ctrls_0_haltRequest_FetchL1Plugin_l297,fetch_logic_ctrls_0_haltRequest_FetchL1Plugin_l217}}});
   assign fetch_logic_ctrls_0_down_Fetch_WORD_PC = fetch_logic_ctrls_0_up_Fetch_WORD_PC;
   assign fetch_logic_ctrls_0_down_Fetch_PC_FAULT = fetch_logic_ctrls_0_up_Fetch_PC_FAULT;
   assign fetch_logic_ctrls_0_down_Fetch_ID = fetch_logic_ctrls_0_up_Fetch_ID;
@@ -13311,7 +13315,7 @@ module VexiiRiscv (
       PcPlugin_logic_harts_0_self_id <= 10'h0;
       PcPlugin_logic_harts_0_self_increment <= 1'b0;
       PcPlugin_logic_harts_0_self_fault <= 1'b0;
-      PcPlugin_logic_harts_0_self_state <= 32'h40000000;
+      PcPlugin_logic_harts_0_self_state <= resetVector;
       PcPlugin_logic_harts_0_holdReg <= 1'b1;
       CsrAccessPlugin_logic_fsm_inject_unfreeze <= 1'b0;
       CsrAccessPlugin_logic_fsm_inject_flushReg <= 1'b0;

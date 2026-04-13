@@ -2,30 +2,37 @@
 #
 # SPDX-License-Identifier: MIT
 
-#PATHS
-VEXIIRISCV_DIR ?= $(shell pwd)
-VEXII_HARDWARE_DIR:=$(VEXIIRISCV_DIR)/hardware
-VEXIIRISCV_SRC_DIR:=$(VEXII_HARDWARE_DIR)/src
-VEXII_SUBMODULES_DIR:=$(VEXIIRISCV_DIR)/submodules
-
 JDK_HOME := $(shell dirname $$(dirname $$(which java)))
 
 # Linux-compatible VexiiRiscv configuration with AXI4 interfaces
 # - 32-bit RISC-V with supervisor mode (required for Linux)
-# - AXI4 interfaces for instruction and data buses
-# - Memory regions:
+# - 3 AXI4 buses: iBus (fetch), dBus (LSU cached), ioBus (LSU uncached)
+# - Memory regions (compile-time configuration):
 #   - 0x00000000-0x7FFFFFFF: Cached (main)
 #   - 0x80000000-0xBFFFFFFF: Uncached (IO)
 #   - 0xC0000000-0xFFFFFFFF: Cached (main)
+#
+# Usage:
+#   make                  - Build with L1 data cache (3 buses)
+#   make USE_CACHE=0      - Build without L1 data cache (2 buses)
+#
+# Note: To change memory regions or reset vector, modify the PARAMS below
+# and rebuild. The IO region is hardcoded in hardware at generation time.
 
 # Set USE_CACHE=0 to generate without L1 data cache
 USE_CACHE ?= 1
 
+# Reset vector and region configuration
+# Note: Values should be hex without 0x prefix for VexiiRiscv
+RESET_VECTOR ?= 40000000
+IO_REGION_BASE ?= 80000000
+IO_REGION_SIZE ?= 40000000
+
 PARAMS ?= \
 	--xlen=32 \
-	--reset-vector=0x40000000 \
+	--reset-vector=$(RESET_VECTOR) \
 	--region base=0,size=80000000,main=1,exe=1 \
-	--region base=80000000,size=40000000,main=0,exe=1 \
+	--region base=$(IO_REGION_BASE),size=$(IO_REGION_SIZE),main=0,exe=1 \
 	--region base=c0000000,size=40000000,main=1,exe=1 \
 	--with-rvm \
 	--with-rvc \
@@ -48,27 +55,41 @@ endif
 
 # Primary targets
 vexiiriscv:
+	cp hardware/spinalhdl/PcPlugin.scala submodules/VexiiRiscv/src/main/scala/vexiiriscv/fetch/PcPlugin.scala
 	cd submodules/VexiiRiscv && \
-	sbt "runMain vexiiriscv.Generate $(PARAMS)"
-	mkdir -p $(VEXIIRISCV_SRC_DIR)
+	nix-shell ../../spinalhdl_shell.nix --run 'sbt "runMain vexiiriscv.Generate $(PARAMS)"'
+	mkdir -p hardware/src
 	sed -e 's/FetchL1Axi4Plugin_logic_axi_/iBusAxi_/g' \
-	    -e 's/$(SED_DBUS)/dBusAxi_/g' \
-	    $(if $(SED_IOBUS),-e 's/$(SED_IOBUS)/ioBusAxi_/g') \
+	    -e 's/LsuL1Axi4Plugin_logic_axi_/dBusAxi_/g' \
+	    -e 's/LsuCachelessAxi4Plugin_logic_axi_/ioBusAxi_/g' \
 	    -e 's/_payload_//g' \
 	    -e 's/_valid/valid/g' \
 	    -e 's/_ready/ready/g' \
-	    submodules/VexiiRiscv/VexiiRiscv.v > $(VEXIIRISCV_SRC_DIR)/VexiiRiscv.v
+	    submodules/VexiiRiscv/VexiiRiscv.v | \
+	python3 scripts/add_io_region_params.py --io-base=$(IO_REGION_BASE) --io-size=$(IO_REGION_SIZE) > hardware/src/VexiiRiscv.v
+	@echo "Generated VexiiRiscv with:"
+	@echo "  - Reset vector: 0x$(RESET_VECTOR)"
+	@echo "  - IO region: 0x$(IO_REGION_BASE) - 0x$$(printf '%x' $$((0x$(IO_REGION_BASE)+0x$(IO_REGION_SIZE))))"
+	@echo "  - USE_CACHE=$(USE_CACHE)"
+
+# Update IO region in existing Verilog (without regenerating from SpinalHDL)
+# Usage: make update-io-region IO_REGION_BASE=80000000 IO_REGION_SIZE=40000000
+update-io-region:
+	python3 scripts/update_io_region.py \
+	    hardware/src/VexiiRiscv.v \
+	    --io-base=$(IO_REGION_BASE) \
+	    --io-size=$(IO_REGION_SIZE)
+	@echo "Updated IO region to:"
+	@echo "  - IO region: 0x$(IO_REGION_BASE) - 0x$$(printf '%x' $$((0x$(IO_REGION_BASE)+0x$(IO_REGION_SIZE))))"
 
 vexiiriscv-help:
 	cd submodules/VexiiRiscv && \
-	sbt -java-home $(JDK_HOME) "runMain vexiiriscv.Generate --help"
+	nix-shell ../../spinalhdl_shell.nix --run 'sbt -java-home $(JDK_HOME) "runMain vexiiriscv.Generate --help"'
 
-#
-# Clean
-#
 clean-vexiiriscv:
-	rm -f $(VEXIIRISCV_SRC_DIR)/VexiiRiscv.v
+	rm -f hardware/src/VexiiRiscv.v
 
-clean-all: clean-vexiiriscv
+clean-submodules:
+	git submodule foreach --recursive git clean -ffdx
 
-.PHONY: vexiiriscv vexiiriscv-help clean-vexiiriscv clean-all
+.PHONY: vexiiriscv vexiiriscv-help clean-vexiiriscv clean-submodules

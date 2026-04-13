@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
+# Nix environment with dependencies for SpinalHDL
+
 { pkgs ? import <nixpkgs> {}, jdk ? "jdk11" }:
   pkgs.mkShell {
     # nativeBuildInputs is usually what you want -- tools you need to run
