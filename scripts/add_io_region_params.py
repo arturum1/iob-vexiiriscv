@@ -3,8 +3,9 @@
 Add IO region parameters to VexiiRiscv Verilog.
 
 This script:
-1. Adds localparam declarations for IO_BASE and IO_SIZE
-2. Replaces hardcoded bit-mask logic with parameterized comparison
+1. Adds parameter declarations for IO_REGION_BASE and IO_REGION_SIZE
+2. Adds localparam for IO_REGION_END after the port list
+3. Replaces hardcoded bit-mask logic with parameterized comparison
 
 Usage:
     cat input.v | python3 add_io_region_params.py --io-base=80000000 --io-size=40000000 > output.v
@@ -25,24 +26,39 @@ def add_io_region_params(verilog, io_base, io_size):
     
     # Convert to 32-bit hex with 0x prefix
     io_base_formatted = format(int(io_base, 16), '08x')
-    io_end_formatted = format(int(io_base, 16) + int(io_size, 16), '08x')
+    io_size_formatted = format(int(io_size, 16), '08x')
     
-    # Add localparams after module declaration
-    localparams = f"""// IO region configuration (can be updated with update_io_region.py)
-  localparam [31:0] IO_REGION_BASE = 32'h{io_base_formatted};
-  localparam [31:0] IO_REGION_END = 32'h{io_end_formatted};
+    # Define parameters to be inserted into the module header
+    params = f"""#(
+  parameter [31:0] IO_REGION_BASE = 32'h{io_base_formatted},
+  parameter [31:0] IO_REGION_SIZE = 32'h{io_size_formatted}
+) """
+    
+    # Insert parameters before the port list
+    # Matches "module VexiiRiscv ("
+    verilog = re.sub(
+        r'(module VexiiRiscv )\s*\(',
+        r'\1' + params + r'(',
+        verilog
+    )
+
+    # Add localparam for END after the module's port list closing ");"
+    localparam_end = """
+  localparam [31:0] IO_REGION_END = IO_REGION_BASE + IO_REGION_SIZE;
 """
     
-    # Insert localparams after "module VexiiRiscv ("
+    # We look for the first ");" that appears after "module VexiiRiscv"
+    # and insert the localparam immediately after it.
+    pattern = r'(module VexiiRiscv.*?\);)'
     verilog = re.sub(
-        r'(module VexiiRiscv \(\n)',
-        r'\1' + localparams,
-        verilog
+        pattern,
+        r'\1' + localparam_end,
+        verilog,
+        count=1,
+        flags=re.DOTALL
     )
     
     # Replace FetchL1Plugin IO check (instruction fetch)
-    # Original: (addr & 0x40000000) == 0x40000000) || (addr & 0x80000000) == 0
-    # New: addr >= IO_REGION_BASE && addr < IO_REGION_END
     verilog = re.sub(
         r'(_zz_FetchL1Plugin_logic_ctrl_pmaPort_rsp_io = )\(\|\{[^}]+\}\);',
         r'\1((FetchL1Plugin_pmaBuilder_addressBits >= IO_REGION_BASE) && (FetchL1Plugin_pmaBuilder_addressBits < IO_REGION_END));',
@@ -57,7 +73,6 @@ def add_io_region_params(verilog, io_base, io_size):
     )
     
     # Replace LsuPlugin cached fault check (load/store to L1 cache)
-    # This checks if address is in a cached region - simplified to: is_io && transfers_hit
     verilog = re.sub(
         r'(LsuPlugin_logic_onPma_cached_rsp_fault = )\(\! \(\(\|\{[^}]+\}\) && \(\|LsuPlugin_pmaBuilder_l1_onTransfers_0_hit\)\)\);',
         r'\1(((LsuPlugin_pmaBuilder_l1_addressBits >= IO_REGION_BASE) && (LsuPlugin_pmaBuilder_l1_addressBits < IO_REGION_END)) && (|LsuPlugin_pmaBuilder_l1_onTransfers_0_hit));',

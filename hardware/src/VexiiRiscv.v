@@ -4,10 +4,10 @@
 
 `timescale 1ns/1ps
 
-module VexiiRiscv (
-// IO region configuration (can be updated with update_io_region.py)
-  localparam [31:0] IO_REGION_BASE = 32'h80000000;
-  localparam [31:0] IO_REGION_END = 32'hc0000000;
+module VexiiRiscv #(
+  parameter [31:0] IO_REGION_BASE = 32'h80000000,
+  parameter [31:0] IO_REGION_SIZE = 32'h40000000
+) (
   output wire          dBusAxi_awvalid,
   input  wire          dBusAxi_awready,
   output wire [31:0]   dBusAxi_awaddr,
@@ -84,6 +84,8 @@ module VexiiRiscv (
   input  wire          clk,
   input  wire          reset
 );
+  localparam [31:0] IO_REGION_END = IO_REGION_BASE + IO_REGION_SIZE;
+
   localparam EnvPluginOp_ECALL = 3'd0;
   localparam EnvPluginOp_EBREAK = 3'd1;
   localparam EnvPluginOp_PRIV_RET = 3'd2;
