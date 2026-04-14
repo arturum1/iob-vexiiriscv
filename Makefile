@@ -59,14 +59,15 @@ vexiiriscv:
 	cd submodules/VexiiRiscv && \
 	nix-shell ../../spinalhdl_shell.nix --run 'sbt "runMain vexiiriscv.Generate $(PARAMS)"'
 	mkdir -p hardware/src
-	sed -e 's/FetchL1Axi4Plugin_logic_axi_/iBusAxi_/g' \
-	    -e 's/LsuL1Axi4Plugin_logic_axi_/dBusAxi_/g' \
-	    -e 's/LsuCachelessAxi4Plugin_logic_axi_/ioBusAxi_/g' \
-	    -e 's/_payload_//g' \
-	    -e 's/_valid/valid/g' \
-	    -e 's/_ready/ready/g' \
-	    submodules/VexiiRiscv/VexiiRiscv.v | \
-	python3 scripts/add_io_region_params.py --io-base=$(IO_REGION_BASE) --io-size=$(IO_REGION_SIZE) > hardware/src/VexiiRiscv.v
+	# sed -e 's/FetchL1Axi4Plugin_logic_axi_/iBusAxi_/g' \
+	#     -e 's/LsuL1Axi4Plugin_logic_axi_/dBusAxi_/g' \
+	#     -e 's/LsuCachelessAxi4Plugin_logic_axi_/ioBusAxi_/g' \
+	#     -e 's/_payload_//g' \
+	#     -e 's/_valid/valid/g' \
+	#     -e 's/_ready/ready/g' \
+	#     submodules/VexiiRiscv/VexiiRiscv.v | \
+	# python3 scripts/add_io_region_params.py --io-base=$(IO_REGION_BASE) --io-size=$(IO_REGION_SIZE) > hardware/src/VexiiRiscv.v
+	cp submodules/VexiiRiscv/VexiiRiscv.v hardware/src/VexiiRiscv.v # Alternative to bypass above
 	@echo "Generated VexiiRiscv with:"
 	@echo "  - Reset vector: 0x$(RESET_VECTOR)"
 	@echo "  - IO region: 0x$(IO_REGION_BASE) - 0x$$(printf '%x' $$((0x$(IO_REGION_BASE)+0x$(IO_REGION_SIZE))))"
