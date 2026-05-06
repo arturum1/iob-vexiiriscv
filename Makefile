@@ -35,13 +35,17 @@ PARAMS ?= \
 	--region base=$(IO_REGION_BASE),size=$(IO_REGION_SIZE),main=0,exe=1 \
 	--region base=c0000000,size=40000000,main=1,exe=1 \
 	--with-rvm \
+	--with-rva \
 	--with-rvc \
+	--with-rvZb \
+	--with-rvZcbm \
 	--with-supervisor \
 	--fetch-l1 \
 	--fetch-axi4 \
 	--with-btb \
 	--with-gshare \
-	--with-ras
+	--with-ras \
+	--performance-counters 4
 
 ifeq ($(USE_CACHE),1)
 	PARAMS += --lsu-l1 --lsu-l1-axi4 --lsu-axi4
