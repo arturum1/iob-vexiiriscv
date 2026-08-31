@@ -29,23 +29,25 @@ IO_REGION_BASE ?= 80000000
 IO_REGION_SIZE ?= 40000000
 
 PARAMS ?= \
-	--xlen=32 \
-	--reset-vector=$(RESET_VECTOR) \
-	--region base=0,size=80000000,main=1,exe=1 \
-	--region base=$(IO_REGION_BASE),size=$(IO_REGION_SIZE),main=0,exe=1 \
-	--region base=c0000000,size=40000000,main=1,exe=1 \
-	--with-rvm \
-	--with-rva \
-	--with-rvc \
-	--with-rvZb \
-	--with-rvZcbm \
-	--with-supervisor \
-	--fetch-l1 \
-	--fetch-axi4 \
-	--with-btb \
-	--with-gshare \
-	--with-ras \
-	--performance-counters 4
+        --xlen=32 \
+        --reset-vector=$(RESET_VECTOR) \
+        --region base=0,size=80000000,main=1,exe=1 \
+        --region base=$(IO_REGION_BASE),size=$(IO_REGION_SIZE),main=0,exe=1 \
+        --region base=c0000000,size=40000000,main=1,exe=1 \
+        --with-rvm \
+        --with-rva \
+        --with-rvc \
+        --with-rvZb \
+        --with-rvZcbm \
+        --with-supervisor \
+        --fetch-l1 \
+        --fetch-axi4 \
+        --with-btb \
+        --with-gshare \
+        --with-ras \
+        --performance-counters 4
+#       --with-user is implied by --with-supervisor
+#       --with-mul is implied by --with-rvm
 
 ifeq ($(USE_CACHE),1)
 	PARAMS += --lsu-l1 --lsu-l1-axi4 --lsu-axi4
