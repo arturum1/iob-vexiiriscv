@@ -20,7 +20,7 @@ JDK_HOME := $(shell dirname $$(dirname $$(which java)))
 # and rebuild. The IO region is hardcoded in hardware at generation time.
 
 # Set USE_CACHE=0 to generate without L1 data cache
-USE_CACHE ?= 1
+USE_CACHE ?= 0
 
 # Reset vector and region configuration
 # Note: Values should be hex without 0x prefix for VexiiRiscv
@@ -57,6 +57,9 @@ else
 	PARAMS += --lsu-axi4
 	SED_DBUS := LsuCachelessAxi4Plugin_logic_axi_
 	SED_IOBUS :=
+	# VexiiRiscv cacheless AXI4 bridge does not support AMO/LR/SC,
+	# so the A extension (atomics) must be disabled without L1 cache.
+	PARAMS := $(filter-out --with-rva,$(PARAMS))
 endif
 
 # Primary targets

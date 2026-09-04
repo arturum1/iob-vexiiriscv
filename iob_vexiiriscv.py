@@ -4,6 +4,7 @@
 
 import os
 
+USE_CACHE = False
 
 def setup(py_params_dict):
     # Each generated cpu verilog module must have a unique name due to different python parameters (can't have two differnet verilog modules with same name).
@@ -22,6 +23,8 @@ def setup(py_params_dict):
         if param in params:
             params[param] = py_params_dict[param]
 
+    # For cached version:
+    #
     # CPU ibus --------------------------> i_bus_m port
     #
     # CPU cached dbus ----+-> axi_merge -> d_bus_m port
@@ -29,11 +32,18 @@ def setup(py_params_dict):
     #                     |
     # CPU uncached iobus -+
 
+    # For uncached version:
+    #
+    # CPU ibus -----> i_bus_m port
+    #
+    # CPU dbus -----> d_bus_m port
+
     attributes_dict = {
         "name": py_params_dict["name"],
         "version": "0.1.0",
         "generate_hw": True,
-        "confs": [
+    }
+    attributes_dict["confs"] = [
             {
                 "name": "AXI_ID_W",
                 "descr": "AXI ID bus width",
@@ -66,8 +76,8 @@ def setup(py_params_dict):
                 "min": 0,
                 "max": 4,
             },
-        ],
-        "ports": [
+    ]
+    attributes_dict["ports"] = [
             {
                 "name": "clk_en_rst_s",
                 "descr": "Clock, clock enable and reset",
@@ -127,80 +137,83 @@ def setup(py_params_dict):
                     {"name": "mtime_i", "descr": "Input from external 64-bit counter for time CSRs", "width": "64"},
                 ],
             },
-        ],
-        "wires": [
-            {
-                "name": "cpu_reset",
-                "descr": "cpu reset signal",
-                "signals": [
-                    {"name": "cpu_reset", "width": "1"},
-                ],
-            },
-            # Internal buses
-            {
-                "name": "cached_d_bus",
-                "signals": {
-                    "type": "axi",
-                    "prefix": "cached_dbus_",
-                    "ID_W": "AXI_ID_W",
-                    "ADDR_W": "AXI_ADDR_W",
-                    "DATA_W": "AXI_DATA_W",
-                    "LEN_W": "AXI_LEN_W",
-                    "LOCK_W": 1,
+    ]
+    attributes_dict["wires"] = [
+        {
+            "name": "cpu_reset",
+            "descr": "cpu reset signal",
+            "signals": [
+                {"name": "cpu_reset", "width": "1"},
+            ],
+        },
+    ]
+    if USE_CACHE:
+        attributes_dict["wires"] = [
+                # Internal buses
+                {
+                    "name": "cached_d_bus",
+                    "signals": {
+                        "type": "axi",
+                        "prefix": "cached_dbus_",
+                        "ID_W": "AXI_ID_W",
+                        "ADDR_W": "AXI_ADDR_W",
+                        "DATA_W": "AXI_DATA_W",
+                        "LEN_W": "AXI_LEN_W",
+                        "LOCK_W": 1,
+                    },
                 },
-            },
-            {
-                "name": "uncached_io_bus",
-                "signals": {
-                    "type": "axi",
-                    "prefix": "iobus_",
-                    "ID_W": "AXI_ID_W",
-                    "ADDR_W": "AXI_ADDR_W",
-                    "DATA_W": "AXI_DATA_W",
-                    "LEN_W": "AXI_LEN_W",
-                    "LOCK_W": 1,
+                {
+                    "name": "uncached_io_bus",
+                    "signals": {
+                        "type": "axi",
+                        "prefix": "iobus_",
+                        "ID_W": "AXI_ID_W",
+                        "ADDR_W": "AXI_ADDR_W",
+                        "DATA_W": "AXI_DATA_W",
+                        "LEN_W": "AXI_LEN_W",
+                        "LOCK_W": 1,
+                    },
                 },
-            },
-            {
-                "name": "internal_wires",
-                "signals": [
-                    {"name": "dbus_araddr_ignore_bits", "width": 1},
-                    {"name": "dbus_awaddr_ignore_bits", "width": 1},
-                ],
-            },
-        ],
-        "subblocks": [
-            {
-                "core_name": "iob_axi_merge",
-                "name": "iob_vexiiriscv_axi_merge",
-                "instance_name": "axi_merge",
-                "instance_description": "Merge",
-                "addr_w": 33,  # Each subordinate has -1 address bit (32 bits each). Manager has 33 bits (1 ignored).
-                "lock_w": 1,
-                "parameters": {
-                    "ID_W": "AXI_ID_W",
-                    "LEN_W": "AXI_LEN_W",
+                {
+                    "name": "internal_wires",
+                    "signals": [
+                        {"name": "dbus_araddr_ignore_bits", "width": 1},
+                        {"name": "dbus_awaddr_ignore_bits", "width": 1},
+                    ],
                 },
-                "num_subordinates": 2,
-                "connect": {
-                    "clk_en_rst_s": "clk_en_rst_s",
-                    "reset_i": "rst_i",
-                    "s_0_s": "cached_d_bus",
-                    "s_1_s": "uncached_io_bus",
-                    "m_m": (
-                        "d_bus_m",
-                        [
-                            # Ignore most significant address bits (we only use 32 bits)
-                            "{dbus_araddr_ignore_bits, dbus_axi_araddr_o}",
-                            "{dbus_awaddr_ignore_bits, dbus_axi_awaddr_o}",
-                        ],
-                    ),
+        ]
+    if USE_CACHE:
+        attributes_dict["subblocks"] = [
+                {
+                    "core_name": "iob_axi_merge",
+                    "name": "iob_vexiiriscv_axi_merge",
+                    "instance_name": "axi_merge",
+                    "instance_description": "Merge",
+                    "addr_w": 33,  # Each subordinate has -1 address bit (32 bits each). Manager has 33 bits (1 ignored).
+                    "lock_w": 1,
+                    "parameters": {
+                        "ID_W": "AXI_ID_W",
+                        "LEN_W": "AXI_LEN_W",
+                    },
+                    "num_subordinates": 2,
+                    "connect": {
+                        "clk_en_rst_s": "clk_en_rst_s",
+                        "reset_i": "rst_i",
+                        "s_0_s": "cached_d_bus",
+                        "s_1_s": "uncached_io_bus",
+                        "m_m": (
+                            "d_bus_m",
+                            [
+                                # Ignore most significant address bits (we only use 32 bits)
+                                "{dbus_araddr_ignore_bits, dbus_axi_araddr_o}",
+                                "{dbus_awaddr_ignore_bits, dbus_axi_awaddr_o}",
+                            ],
+                        ),
+                    },
                 },
-            },
-        ],
-        "snippets": [
-            {
-                "verilog_code": """
+        ]
+    if USE_CACHE:
+        snippet = """
     wire [7:0] ibus_axi_arlen_int;
     wire [7:0] cached_dbus_axi_arlen_int;
     wire [7:0] cached_dbus_axi_awlen_int;
@@ -299,31 +312,6 @@ def setup(py_params_dict):
       .reset(cpu_reset)
   );
 
-
-
-   assign cpu_reset = rst_i | arst_i;
-
-   assign ibus_axi_awvalid_o = 1'b0;
-   assign ibus_axi_awaddr_o = {AXI_ADDR_W{1'b0}};
-   assign ibus_axi_awid_o = 1'b0;
-   assign ibus_axi_awlen_o = {AXI_LEN_W{1'b0}};
-   assign ibus_axi_awsize_o = {3{1'b0}};
-   assign ibus_axi_awburst_o = {2{1'b0}};
-   assign ibus_axi_awlock_o = 1'b0;
-   assign ibus_axi_awcache_o = {4{1'b0}};
-   assign ibus_axi_awqos_o = {4{1'b0}};
-   assign ibus_axi_wvalid_o = 1'b0;
-   assign ibus_axi_wdata_o = {AXI_DATA_W{1'b0}};
-   assign ibus_axi_wstrb_o = {AXI_DATA_W / 8{1'b0}};
-   assign ibus_axi_wlast_o = 1'b0;
-   assign ibus_axi_bready_o = 1'b0;
-
-   // Unused signals ibus
-   assign ibus_axi_arid_o = 1'b0;
-   assign ibus_axi_arlock_o = 1'b0;
-   assign ibus_axi_arqos_o = 1'b0;
-   // ibus_axi_rid
-
    // Unused signals (cached) dbus
    assign cached_dbus_axi_awid = 1'b0;
    assign cached_dbus_axi_awlock = 1'b0;
@@ -351,19 +339,132 @@ def setup(py_params_dict):
 
    generate
       if (AXI_LEN_W < 8) begin : gen_if_less_than_8
-         assign ibus_axi_arlen_o = ibus_axi_arlen_int[AXI_LEN_W-1:0];
          assign cached_dbus_axi_arlen = cached_dbus_axi_arlen_int[AXI_LEN_W-1:0];
          assign cached_dbus_axi_awlen = cached_dbus_axi_awlen_int[AXI_LEN_W-1:0];
       end else begin : gen_if_equal_8
-         assign ibus_axi_arlen_o = ibus_axi_arlen_int;
          assign cached_dbus_axi_arlen = cached_dbus_axi_arlen_int;
          assign cached_dbus_axi_awlen = cached_dbus_axi_awlen_int;
       end
    endgenerate
 """
-            }
-        ],
-    }
+    else:  # NOT USE_CACHE
+        snippet="""
+    wire [7:0] ibus_axi_arlen_int;
+
+
+  // Instantiation of VexiiRiscv core
+  VexiiRiscv #(
+""" + f"""\
+      .IO_REGION_BASE (32'h{params["uncached_start_addr"]:x}),
+      .IO_REGION_SIZE (32'h{params["uncached_size"]:x})
+""" + """\
+  ) CPU (
+      // Interrupt sources
+      .PrivilegedPlugin_logic_harts_0_int_m_timer(mtip_i),
+      .PrivilegedPlugin_logic_harts_0_int_m_software(msip_i),
+      .PrivilegedPlugin_logic_harts_0_int_m_external(meip_i),
+      .PrivilegedPlugin_logic_harts_0_int_s_external(seip_i),
+      // Timbase input
+      .PrivilegedPlugin_logic_rdtime(mtime_i),
+""" + f"""\
+      // CPU reset address
+      .resetVector(32'h{params["reset_addr"]:x}),
+""" + """\
+      // Instruction Bus
+      .iBusAxi_arvalid(ibus_axi_arvalid_o),
+      .iBusAxi_arready(ibus_axi_arready_i),
+      .iBusAxi_araddr(ibus_axi_araddr_o),
+      .iBusAxi_arlen(ibus_axi_arlen_int),
+      .iBusAxi_arsize(ibus_axi_arsize_o),
+      .iBusAxi_arburst(ibus_axi_arburst_o),
+      .iBusAxi_arcache(ibus_axi_arcache_o),
+      .iBusAxi_arprot(),
+      .iBusAxi_rvalid(ibus_axi_rvalid_i),
+      .iBusAxi_rready(ibus_axi_rready_o),
+      .iBusAxi_rdata(ibus_axi_rdata_i),
+      .iBusAxi_rresp(ibus_axi_rresp_i),
+      .iBusAxi_rlast(ibus_axi_rlast_i),
+      // Data Bus
+      .ioBusAxi_awvalid(dbus_axi_awvalid),
+      .ioBusAxi_awready(dbus_axi_awready),
+      .ioBusAxi_awaddr(dbus_axi_awaddr),
+      .ioBusAxi_awid(dbus_axi_awid),
+      .ioBusAxi_awsize(dbus_axi_awsize),
+      .ioBusAxi_awcache(dbus_axi_awcache),
+      .ioBusAxi_awprot(),
+      .ioBusAxi_wvalid(dbus_axi_wvalid),
+      .ioBusAxi_wready(dbus_axi_wready),
+      .ioBusAxi_wdata(dbus_axi_wdata),
+      .ioBusAxi_wstrb(dbus_axi_wstrb),
+      .ioBusAxi_wlast(dbus_axi_wlast),
+      .ioBusAxi_bvalid(dbus_axi_bvalid),
+      .ioBusAxi_bready(dbus_axi_bready),
+      .ioBusAxi_bid(dbus_axi_bid),
+      .ioBusAxi_bresp(dbus_axi_bresp),
+      .ioBusAxi_arvalid(dbus_axi_arvalid),
+      .ioBusAxi_arready(dbus_axi_arready),
+      .ioBusAxi_araddr(dbus_axi_araddr),
+      .ioBusAxi_arid(dbus_axi_arid),
+      .ioBusAxi_arsize(dbus_axi_arsize),
+      .ioBusAxi_arcache(dbus_axi_arcache),
+      .ioBusAxi_arprot(),
+      .ioBusAxi_rvalid(dbus_axi_rvalid),
+      .ioBusAxi_rready(dbus_axi_rready),
+      .ioBusAxi_rdata(dbus_axi_rdata),
+      .ioBusAxi_rid(dbus_axi_rid),
+      .ioBusAxi_rresp(dbus_axi_rresp),
+      .ioBusAxi_rlast(dbus_axi_rlast),
+      // Clock and Reset
+      .clk(clk_i),
+      .reset(cpu_reset)
+  );
+
+   // Unused signals dbus
+   assign dbus_axi_awlock = 1'b0;
+   assign dbus_axi_awqos = {4{1'b0}};
+   assign dbus_axi_arlock = 1'b0;
+   assign dbus_axi_arqos = {4{1'b0}};
+   assign dbus_axi_awburst = {2{1'b0}};
+   assign dbus_axi_arburst = {2{1'b0}};
+   assign dbus_axi_arlen = {AXI_LEN_W{1'b0}};
+   assign dbus_axi_awlen = {AXI_LEN_W{1'b0}};
+"""
+
+    snippet += """
+   assign cpu_reset = rst_i | arst_i;
+
+   // Unused ibus write path
+   assign ibus_axi_awvalid_o = 1'b0;
+   assign ibus_axi_awaddr_o = {AXI_ADDR_W{1'b0}};
+   assign ibus_axi_awid_o = 1'b0;
+   assign ibus_axi_awlen_o = {AXI_LEN_W{1'b0}};
+   assign ibus_axi_awsize_o = {3{1'b0}};
+   assign ibus_axi_awburst_o = {2{1'b0}};
+   assign ibus_axi_awlock_o = 1'b0;
+   assign ibus_axi_awcache_o = {4{1'b0}};
+   assign ibus_axi_awqos_o = {4{1'b0}};
+   assign ibus_axi_wvalid_o = 1'b0;
+   assign ibus_axi_wdata_o = {AXI_DATA_W{1'b0}};
+   assign ibus_axi_wstrb_o = {AXI_DATA_W / 8{1'b0}};
+   assign ibus_axi_wlast_o = 1'b0;
+   assign ibus_axi_bready_o = 1'b0;
+
+   // Unused signals ibus
+   assign ibus_axi_arid_o = 1'b0;
+   assign ibus_axi_arlock_o = 1'b0;
+   assign ibus_axi_arqos_o = 1'b0;
+   // ibus_axi_rid
+
+   generate
+      if (AXI_LEN_W < 8) begin : gen_if_less_than_8_ibus
+         assign ibus_axi_arlen_o = ibus_axi_arlen_int[AXI_LEN_W-1:0];
+      end else begin : gen_if_equal_8_ibus
+         assign ibus_axi_arlen_o = ibus_axi_arlen_int;
+      end
+   endgenerate
+"""
+
+    attributes_dict["snippets"] = [{"verilog_code": snippet}]
 
     # Disable linter for `VexiiRiscv.v` source.
     if py_params_dict.get("py2hwsw_target", "") == "setup":
