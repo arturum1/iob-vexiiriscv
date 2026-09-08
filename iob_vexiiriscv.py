@@ -385,49 +385,49 @@ def setup(py_params_dict):
       .iBusAxi_rresp(ibus_axi_rresp_i),
       .iBusAxi_rlast(ibus_axi_rlast_i),
       // Data Bus
-      .ioBusAxi_awvalid(dbus_axi_awvalid),
-      .ioBusAxi_awready(dbus_axi_awready),
-      .ioBusAxi_awaddr(dbus_axi_awaddr),
-      .ioBusAxi_awid(dbus_axi_awid),
-      .ioBusAxi_awsize(dbus_axi_awsize),
-      .ioBusAxi_awcache(dbus_axi_awcache),
+      .ioBusAxi_awvalid(dbus_axi_awvalid_o),
+      .ioBusAxi_awready(dbus_axi_awready_i),
+      .ioBusAxi_awaddr(dbus_axi_awaddr_o),
+      .ioBusAxi_awid(dbus_axi_awid_o),
+      .ioBusAxi_awsize(dbus_axi_awsize_o),
+      .ioBusAxi_awcache(dbus_axi_awcache_o),
       .ioBusAxi_awprot(),
-      .ioBusAxi_wvalid(dbus_axi_wvalid),
-      .ioBusAxi_wready(dbus_axi_wready),
-      .ioBusAxi_wdata(dbus_axi_wdata),
-      .ioBusAxi_wstrb(dbus_axi_wstrb),
-      .ioBusAxi_wlast(dbus_axi_wlast),
-      .ioBusAxi_bvalid(dbus_axi_bvalid),
-      .ioBusAxi_bready(dbus_axi_bready),
-      .ioBusAxi_bid(dbus_axi_bid),
-      .ioBusAxi_bresp(dbus_axi_bresp),
-      .ioBusAxi_arvalid(dbus_axi_arvalid),
-      .ioBusAxi_arready(dbus_axi_arready),
-      .ioBusAxi_araddr(dbus_axi_araddr),
-      .ioBusAxi_arid(dbus_axi_arid),
-      .ioBusAxi_arsize(dbus_axi_arsize),
-      .ioBusAxi_arcache(dbus_axi_arcache),
+      .ioBusAxi_wvalid(dbus_axi_wvalid_o),
+      .ioBusAxi_wready(dbus_axi_wready_i),
+      .ioBusAxi_wdata(dbus_axi_wdata_o),
+      .ioBusAxi_wstrb(dbus_axi_wstrb_o),
+      .ioBusAxi_wlast(dbus_axi_wlast_o),
+      .ioBusAxi_bvalid(dbus_axi_bvalid_i),
+      .ioBusAxi_bready(dbus_axi_bready_o),
+      .ioBusAxi_bid(dbus_axi_bid_i),
+      .ioBusAxi_bresp(dbus_axi_bresp_i),
+      .ioBusAxi_arvalid(dbus_axi_arvalid_o),
+      .ioBusAxi_arready(dbus_axi_arready_i),
+      .ioBusAxi_araddr(dbus_axi_araddr_o),
+      .ioBusAxi_arid(dbus_axi_arid_o),
+      .ioBusAxi_arsize(dbus_axi_arsize_o),
+      .ioBusAxi_arcache(dbus_axi_arcache_o),
       .ioBusAxi_arprot(),
-      .ioBusAxi_rvalid(dbus_axi_rvalid),
-      .ioBusAxi_rready(dbus_axi_rready),
-      .ioBusAxi_rdata(dbus_axi_rdata),
-      .ioBusAxi_rid(dbus_axi_rid),
-      .ioBusAxi_rresp(dbus_axi_rresp),
-      .ioBusAxi_rlast(dbus_axi_rlast),
+      .ioBusAxi_rvalid(dbus_axi_rvalid_i),
+      .ioBusAxi_rready(dbus_axi_rready_o),
+      .ioBusAxi_rdata(dbus_axi_rdata_i),
+      .ioBusAxi_rid(dbus_axi_rid_i),
+      .ioBusAxi_rresp(dbus_axi_rresp_i),
+      .ioBusAxi_rlast(dbus_axi_rlast_i),
       // Clock and Reset
       .clk(clk_i),
       .reset(cpu_reset)
   );
 
    // Unused signals dbus
-   assign dbus_axi_awlock = 1'b0;
-   assign dbus_axi_awqos = {4{1'b0}};
-   assign dbus_axi_arlock = 1'b0;
-   assign dbus_axi_arqos = {4{1'b0}};
-   assign dbus_axi_awburst = {2{1'b0}};
-   assign dbus_axi_arburst = {2{1'b0}};
-   assign dbus_axi_arlen = {AXI_LEN_W{1'b0}};
-   assign dbus_axi_awlen = {AXI_LEN_W{1'b0}};
+   assign dbus_axi_awlock_o = 1'b0;
+   assign dbus_axi_awqos_o = {4{1'b0}};
+   assign dbus_axi_arlock_o = 1'b0;
+   assign dbus_axi_arqos_o = {4{1'b0}};
+   assign dbus_axi_awburst_o = {2{1'b0}};
+   assign dbus_axi_arburst_o = {2{1'b0}};
+   assign dbus_axi_arlen_o = {AXI_LEN_W{1'b0}};
+   assign dbus_axi_awlen_o = {AXI_LEN_W{1'b0}};
 """
 
     snippet += """
