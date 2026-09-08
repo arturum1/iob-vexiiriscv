@@ -41,6 +41,7 @@ PARAMS ?= \
         --with-rvZcbm \
         --with-supervisor \
         --fetch-l1 \
+        --fetch-l1-ways 2 \
         --fetch-axi4 \
         --with-btb \
         --with-gshare \
