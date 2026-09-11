@@ -20,7 +20,7 @@ JDK_HOME := $(shell dirname $$(dirname $$(which java)))
 # and rebuild. The IO region is hardcoded in hardware at generation time.
 
 # Set USE_CACHE=0 to generate without L1 data cache
-USE_CACHE ?= 0
+USE_CACHE ?= 1
 
 # Reset vector and region configuration
 # Note: Values should be hex without 0x prefix for VexiiRiscv

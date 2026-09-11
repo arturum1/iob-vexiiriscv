@@ -4,7 +4,7 @@
 
 import os
 
-USE_CACHE = False
+USE_CACHE = True
 
 def setup(py_params_dict):
     # Each generated cpu verilog module must have a unique name due to different python parameters (can't have two differnet verilog modules with same name).
