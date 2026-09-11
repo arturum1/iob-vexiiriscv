@@ -13,14 +13,23 @@ JDK_HOME := $(shell dirname $$(dirname $$(which java)))
 #   - 0xC0000000-0xFFFFFFFF: Cached (main)
 #
 # Usage:
-#   make                  - Build with L1 data cache (3 buses)
-#   make USE_CACHE=0      - Build without L1 data cache (2 buses)
+#   make                    - Build with L1 data cache (3 buses), no branch prediction
+#   make USE_CACHE=0        - Build without L1 data cache (2 buses)
+#   make BRANCH_PRED=1      - Enable BTB + GShare + RAS branch prediction
 #
 # Note: To change memory regions or reset vector, modify the PARAMS below
 # and rebuild. The IO region is hardcoded in hardware at generation time.
 
 # Set USE_CACHE=0 to generate without L1 data cache
 USE_CACHE ?= 1
+
+# Branch prediction (BTB, GShare, RAS).
+# BRANCH_PRED=0 disables it: the fetch pipeline then never speculates into
+# predicted targets. This is useful to debug hangs where a speculative fetch
+# requests an address that the system interconnect does not map (e.g. kernel
+# virtual addresses in 0xC0000000-0xFFFFFFFF before/around MMU enable), since
+# such requests are left unanswered by the xbar and stall the CPU silently.
+BRANCH_PRED ?= 0
 
 # Reset vector and region configuration
 # Note: Values should be hex without 0x prefix for VexiiRiscv
@@ -43,12 +52,14 @@ PARAMS ?= \
         --fetch-l1 \
         --fetch-l1-ways 2 \
         --fetch-axi4 \
-        --with-btb \
-        --with-gshare \
-        --with-ras \
         --performance-counters 4
 #       --with-user is implied by --with-supervisor
 #       --with-mul is implied by --with-rvm
+
+# GShare and RAS require the BTB, so the three are enabled/disabled together.
+ifeq ($(BRANCH_PRED),1)
+	PARAMS += --with-btb --with-gshare --with-ras
+endif
 
 ifeq ($(USE_CACHE),1)
 	PARAMS += --lsu-l1 --lsu-l1-axi4 --lsu-axi4
@@ -81,6 +92,7 @@ vexiiriscv:
 	@echo "  - Reset vector: 0x$(RESET_VECTOR)"
 	@echo "  - IO region: 0x$(IO_REGION_BASE) - 0x$$(printf '%x' $$((0x$(IO_REGION_BASE)+0x$(IO_REGION_SIZE))))"
 	@echo "  - USE_CACHE=$(USE_CACHE)"
+	@echo "  - Branch prediction: $(BRANCH_PRED)"
 
 # Update IO region in existing Verilog (without regenerating from SpinalHDL)
 # Usage: make update-io-region IO_REGION_BASE=80000000 IO_REGION_SIZE=40000000
