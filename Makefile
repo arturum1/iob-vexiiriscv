@@ -29,7 +29,7 @@ USE_CACHE ?= 1
 # requests an address that the system interconnect does not map (e.g. kernel
 # virtual addresses in 0xC0000000-0xFFFFFFFF before/around MMU enable), since
 # such requests are left unanswered by the xbar and stall the CPU silently.
-BRANCH_PRED ?= 0
+BRANCH_PRED ?= 1
 
 # Reset vector and region configuration
 # Note: Values should be hex without 0x prefix for VexiiRiscv
